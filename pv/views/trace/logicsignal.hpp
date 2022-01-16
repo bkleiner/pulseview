@@ -64,6 +64,7 @@ public:
 	static const QColor HighColor;
 	static const QColor LowColor;
 	static const QColor SamplingPointColor;
+	static const QColor MarkerFillColor;
 
 	static QColor TriggerMarkerBackgroundColor;
 	static const int TriggerMarkerPadding;
@@ -124,7 +125,8 @@ protected:
 
 	static const QIcon* get_icon(const char *path);
 	static const QPixmap* get_pixmap(const char *path);
-
+	virtual void mouse_left_press_event(const QMouseEvent* event);
+	virtual void hover_point_changed(const QPoint &hp);
 	virtual void update_logic_level_offsets();
 
 protected Q_SLOTS:
@@ -134,8 +136,15 @@ protected Q_SLOTS:
 
 	void on_signal_height_changed(int height);
 
+private:
+	void draw_markers(QPainter &p, vector<QPointF> &marker_points) const;
+	QString time_to_string(double time) const;
+	QString freq_to_string(double freq) const;
+	void paint_mouse_text(QPainter &p, const QString &text, int num_lines);
+
 protected:
 	QColor high_fill_color_;
+	QColor cursor_fill_color_;
 	bool show_sampling_points_, fill_high_areas_;
 	float high_level_offset_, low_level_offset_;  // y offsets relative to trace
 
@@ -158,6 +167,27 @@ protected:
 	// Note: Make sure to update save_settings() and restore_settings() when
 	//       adding a trace-configurable variable here
 	int signal_height_;
+	int edge_height_;
+private:
+	int64_t last_start_sample_;
+	uint64_t last_end_sample_;
+	uint64_t time_diff_start_sample_;
+	uint64_t time_diff_end_sample_;
+	uint64_t last_click_sample_;
+	uint64_t mouse_hover_sample_;
+	uint64_t edge_count_start_sample_;
+	uint64_t rising_edge_count_;
+	uint64_t falling_edge_count_;
+	int last_y_;
+	QPoint hover_point_;
+	QPointF click_point_;
+	QPointF mouse_point_;
+	bool hover_update_;
+	bool clicked_;
+	bool edge_count_running_;
+	bool time_measurement_running_;
+	double last_pixel_offset_;
+	QPixmap *pix_;
 };
 
 } // namespace trace
