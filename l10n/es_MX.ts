@@ -4,7 +4,7 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../pv/application.cpp" line="137"/>
+        <location filename="../pv/application.cpp" line="131"/>
         <source>Some parts of the application may still use the previous language. Re-opening the affected windows or restarting the application will remedy this.</source>
         <translation>Algunas partes de la aplicación podrían seguir usando el idioma anterior. Volver a abrir las ventanas afectadas o reiniciar la aplicación solucionará esto.</translation>
     </message>
@@ -119,9 +119,9 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation>Detener</translation>
     </message>
     <message>
-        <location filename="../pv/mainwindow.cpp" line="644"/>
-        <location filename="../pv/mainwindow.cpp" line="867"/>
-        <location filename="../pv/mainwindow.cpp" line="893"/>
+        <location filename="../pv/mainwindow.cpp" line="635"/>
+        <location filename="../pv/mainwindow.cpp" line="860"/>
+        <location filename="../pv/mainwindow.cpp" line="886"/>
         <source>Confirmation</source>
         <translation>Confirmación</translation>
     </message>
@@ -131,8 +131,8 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation>Hay datos sin guardar. ¿Cerrar de todos modos?</translation>
     </message>
     <message>
-        <location filename="../pv/mainwindow.cpp" line="868"/>
-        <location filename="../pv/mainwindow.cpp" line="894"/>
+        <location filename="../pv/mainwindow.cpp" line="861"/>
+        <location filename="../pv/mainwindow.cpp" line="887"/>
         <source>This session contains unsaved data. Close it anyway?</source>
         <translation>Esta sesión contiene datos sin guardar. ¿Cerrar de todos modos?</translation>
     </message>
@@ -162,7 +162,7 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
     <message>
         <location filename="../pv/session.cpp" line="396"/>
         <source>Can&apos;t restore generated signal of unknown type %1 (%2)</source>
-        <translation>No se puede restaurar la señal generada de tipo desconocido %1 ( %2)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/session.cpp" line="723"/>
@@ -185,12 +185,12 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation>No hay canales habilitados.</translation>
     </message>
     <message>
-        <location filename="../pv/session.cpp" line="1318"/>
+        <location filename="../pv/session.cpp" line="1311"/>
         <source>Out of memory, acquisition stopped.</source>
         <translation>Sin memoria, la adquisición se detuvo.</translation>
     </message>
     <message>
-        <location filename="../pv/session.cpp" line="1525"/>
+        <location filename="../pv/session.cpp" line="1518"/>
         <source>Can&apos;t handle more than 64 logic channels.</source>
         <translation>No puede manejar más de 64 canales lógicos.</translation>
     </message>
@@ -218,9 +218,9 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation>No se puede guardar el rango sin datos de muestra.</translation>
     </message>
     <message>
-        <location filename="../pv/storesession.cpp" line="191"/>
-        <location filename="../pv/storesession.cpp" line="298"/>
-        <location filename="../pv/storesession.cpp" line="313"/>
+        <location filename="../pv/storesession.cpp" line="188"/>
+        <location filename="../pv/storesession.cpp" line="295"/>
+        <location filename="../pv/storesession.cpp" line="310"/>
         <source>Error while saving: </source>
         <translation>Error al guardar: </translation>
     </message>
@@ -230,7 +230,7 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
     <message>
         <location filename="../pv/binding/device.cpp" line="82"/>
         <source>Note for device developers: Ignoring device configuration capability &apos;%1&apos; as it is missing GET and/or SET</source>
-        <translation>Nota para desarrolladores de dispositivos: Ignorar la capacidad de configuración del dispositivo &apos;%1&apos;, ya que falta GET y/o SET</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/binding/device.cpp" line="107"/>
@@ -241,32 +241,32 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
 <context>
     <name>pv::data::DecodeSignal</name>
     <message>
-        <location filename="../pv/data/decodesignal.cpp" line="223"/>
+        <location filename="../pv/data/decodesignal.cpp" line="220"/>
         <source>No decoders</source>
         <translation>Sin decodificadores</translation>
     </message>
     <message>
-        <location filename="../pv/data/decodesignal.cpp" line="230"/>
+        <location filename="../pv/data/decodesignal.cpp" line="227"/>
         <source>There are no channels assigned to this decoder</source>
         <translation>No hay canales asignados a este decodificador</translation>
     </message>
     <message>
-        <location filename="../pv/data/decodesignal.cpp" line="244"/>
+        <location filename="../pv/data/decodesignal.cpp" line="241"/>
         <source>One or more required channels have not been specified</source>
         <translation>No se han especificado uno o más canales requeridos</translation>
     </message>
     <message>
-        <location filename="../pv/data/decodesignal.cpp" line="260"/>
+        <location filename="../pv/data/decodesignal.cpp" line="257"/>
         <source>No input data</source>
         <translation>Sin datos de entrada</translation>
     </message>
     <message>
-        <location filename="../pv/data/decodesignal.cpp" line="1325"/>
+        <location filename="../pv/data/decodesignal.cpp" line="1310"/>
         <source>Decoder reported an error</source>
         <translation>El decodificador reportó un error</translation>
     </message>
     <message>
-        <location filename="../pv/data/decodesignal.cpp" line="1484"/>
+        <location filename="../pv/data/decodesignal.cpp" line="1464"/>
         <source>Failed to create decoder instance</source>
         <translation>Error al crear la instancia del decodificador</translation>
     </message>
@@ -276,29 +276,29 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
     <message>
         <location filename="../pv/data/mathsignal.cpp" line="107"/>
         <source>Math%1</source>
-        <translation>Math%1</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/data/mathsignal.cpp" line="306"/>
         <source>No expression defined, nothing to do</source>
-        <translation>Sin expresión definida, nada que hacer</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/data/mathsignal.cpp" line="345"/>
         <source>%1 at line %2, column %3: %4</source>
-        <translation>%1 en línea %2, columna %3: %4</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/data/mathsignal.cpp" line="364"/>
         <location filename="../pv/data/mathsignal.cpp" line="536"/>
         <source>&quot;%1&quot; isn&apos;t a valid analog signal</source>
-        <translation>&quot;%1&quot; no es una señal analógica válida</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/data/mathsignal.cpp" line="374"/>
         <location filename="../pv/data/mathsignal.cpp" line="611"/>
         <source>No data will be generated as %1 must be enabled</source>
-        <translation>No se generarán datos ya que %1 debe estar habilitado</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -422,7 +422,7 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
     </message>
     <message>
         <location filename="../pv/dialogs/settings.cpp" line="153"/>
-        <location filename="../pv/dialogs/settings.cpp" line="415"/>
+        <location filename="../pv/dialogs/settings.cpp" line="406"/>
         <source>Decoders</source>
         <translation>Decodificadores</translation>
     </message>
@@ -472,27 +472,27 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation>Guardar &amp;configuración de sesión junto al archivo .sr</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="286"/>
+        <location filename="../pv/dialogs/settings.cpp" line="281"/>
         <source>Start acquisition for all open sessions when clicking &apos;Run&apos;</source>
-        <translation>Iniciar adquisición para todas las sesiones abiertas al dar clic en &apos;Ejecutar&apos;</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="301"/>
+        <location filename="../pv/dialogs/settings.cpp" line="296"/>
         <source>Trace View</source>
         <translation>Vista de señales</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="309"/>
+        <location filename="../pv/dialogs/settings.cpp" line="304"/>
         <source>Use colored trace &amp;background</source>
         <translation>Usar &amp;fondo de trazos coloreado</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="313"/>
+        <location filename="../pv/dialogs/settings.cpp" line="308"/>
         <source>Constantly perform &amp;zoom-to-fit during acquisition</source>
         <translation>Realizar constantemente zoom para &amp;ajustar durante la adquisición</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="317"/>
+        <location filename="../pv/dialogs/settings.cpp" line="312"/>
         <source>Perform a zoom-to-&amp;fit when acquisition stops</source>
         <translation>Realizar un zoom para ajustar cuando la adquisición se &amp;detenga</translation>
     </message>
@@ -501,12 +501,12 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation type="vanished">Mostrar el tiempo cero en el trigger</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="325"/>
+        <location filename="../pv/dialogs/settings.cpp" line="320"/>
         <source>Always keep &amp;newest samples at the right edge during capture</source>
         <translation>Mantener siempre las muestras más &amp;recientes en el borde derecho durante la captura</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="333"/>
+        <location filename="../pv/dialogs/settings.cpp" line="328"/>
         <source>Show data &amp;sampling points</source>
         <translation>Mostrar puntos de datos mue&amp;streados</translation>
     </message>
@@ -515,194 +515,189 @@ Se guardó un formulario legible para humanosen el disco y fue escrito en el log
         <translation type="vanished">Rellenar áreas altas de señales lógicas</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="321"/>
+        <location filename="../pv/dialogs/settings.cpp" line="316"/>
         <source>Show time zero at the &amp;trigger</source>
-        <translation>Mostrar tiempo cero en el &amp;disparo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="329"/>
+        <location filename="../pv/dialogs/settings.cpp" line="324"/>
         <source>Allow &amp;vertical dragging in the view area</source>
-        <translation>Permitir arrastre &amp;vertical in el área de vista</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="337"/>
+        <location filename="../pv/dialogs/settings.cpp" line="332"/>
         <source>Fill &amp;high areas of logic signals</source>
-        <translation>Llenar áreas en &amp;alto de señales lógicas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="344"/>
+        <location filename="../pv/dialogs/settings.cpp" line="339"/>
         <source>Color to fill high areas of logic signals with</source>
         <translation>Color para llenar áreas altas de señales lógicas</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="348"/>
+        <location filename="../pv/dialogs/settings.cpp" line="343"/>
         <source>Show analog minor grid in addition to div grid</source>
         <translation>Mostrar cuadrícula menor analógica además de cuadrícula por división</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="352"/>
+        <location filename="../pv/dialogs/settings.cpp" line="347"/>
         <source>Highlight mouse cursor using a vertical marker line</source>
         <translation>Resaltar el cursor del mouse usando una línea de marcador vertical</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="356"/>
-        <source>Keep active item on ruler selected when editing popup is closed</source>
-        <translation>Mantener el elemento activo seleccionado en la regla cuando se cierre la ventana de edición emergente</translation>
-    </message>
-    <message>
-        <location filename="../pv/dialogs/settings.cpp" line="360"/>
+        <location filename="../pv/dialogs/settings.cpp" line="351"/>
+        <location filename="../pv/dialogs/settings.cpp" line="377"/>
         <location filename="../pv/dialogs/settings.cpp" line="386"/>
-        <location filename="../pv/dialogs/settings.cpp" line="395"/>
         <source> pixels</source>
         <translation> píxeles</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="365"/>
+        <location filename="../pv/dialogs/settings.cpp" line="356"/>
         <source>Maximum distance from edges before markers snap to them</source>
         <translation>Distancia máxima desde los bordes antes de que los marcadores se ajusten a ellos</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="372"/>
+        <location filename="../pv/dialogs/settings.cpp" line="363"/>
         <source>Color to fill cursor area with</source>
         <translation>Color para llenar el área del cursor</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="375"/>
+        <location filename="../pv/dialogs/settings.cpp" line="366"/>
         <source>None</source>
         <translation>Ninguna</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="376"/>
+        <location filename="../pv/dialogs/settings.cpp" line="367"/>
         <source>Background</source>
         <translation>Fondo</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="377"/>
+        <location filename="../pv/dialogs/settings.cpp" line="368"/>
         <source>Dots</source>
         <translation>Puntos</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="382"/>
+        <location filename="../pv/dialogs/settings.cpp" line="373"/>
         <source>Conversion threshold display mode (analog traces only)</source>
-        <translation>Modo de visualización del umbral de conversión (solo trazos analógicos)</translation>
+        <translation>Modo de visualización del umbral de conversión (solo trazas analógicas)</translation>
+    </message>
+    <message>
+        <location filename="../pv/dialogs/settings.cpp" line="382"/>
+        <source>Default analog trace div height</source>
+        <translation>Altura de división de trazo análogo por defecto</translation>
     </message>
     <message>
         <location filename="../pv/dialogs/settings.cpp" line="391"/>
-        <source>Default analog trace div height</source>
-        <translation>Altura de división de trazo analógico por defecto</translation>
-    </message>
-    <message>
-        <location filename="../pv/dialogs/settings.cpp" line="400"/>
         <source>Default logic trace height</source>
         <translation>Altura de trazo lógico por defecto</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="423"/>
+        <location filename="../pv/dialogs/settings.cpp" line="414"/>
         <source>Allow configuration of &amp;initial signal state</source>
         <translation>Permitir configuración de estado de señal &amp;inicial</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="427"/>
+        <location filename="../pv/dialogs/settings.cpp" line="418"/>
         <source>Always show all &amp;rows, even if no annotation is visible</source>
         <translation>Mostrar siempre todas las &amp;filas, incluso si no hay ninguna anotación visible</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="435"/>
+        <location filename="../pv/dialogs/settings.cpp" line="426"/>
         <source>Annotation export format</source>
         <translation>Formato de exportación de anotaciones</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="436"/>
+        <location filename="../pv/dialogs/settings.cpp" line="427"/>
         <source>%s = sample range; %d: decoder name; %r: row name; %c: class name</source>
         <translation>%s = rango de muestra; %d: nombre del decodificador; %r: nombre de fila; %c: nombre de clase</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="439"/>
+        <location filename="../pv/dialogs/settings.cpp" line="430"/>
         <source>%1: longest annotation text; %a: all annotation texts; %q: use quotation marks</source>
         <translation>%1: texto de anotación más largo; %a: todos los textos de anotación; %q: use comillas</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="459"/>
+        <location filename="../pv/dialogs/settings.cpp" line="450"/>
         <source>%1&lt;br /&gt;&lt;a href=&quot;http://%2&quot;&gt;%2&lt;/a&gt;</source>
         <translation>%1&lt;br /&gt;&lt;a href=&quot;http://%2&quot;&gt;%2&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="460"/>
+        <location filename="../pv/dialogs/settings.cpp" line="451"/>
         <source>GNU GPL, version 3 or later</source>
         <translation>GNU GPL, versión 3 o posterior</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="471"/>
+        <location filename="../pv/dialogs/settings.cpp" line="462"/>
         <source>Versions, libraries and features:</source>
         <translation>Versiones, bibliotecas y características:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="478"/>
+        <location filename="../pv/dialogs/settings.cpp" line="469"/>
         <source>Firmware search paths:</source>
         <translation>Rutas de búsqueda de firmware:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="485"/>
+        <location filename="../pv/dialogs/settings.cpp" line="476"/>
         <source>Protocol decoder search paths:</source>
         <translation>Ruta de búsqueda del decodificador de protocolo:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="488"/>
+        <location filename="../pv/dialogs/settings.cpp" line="479"/>
         <source>&lt;tr&gt;&lt;td colspan=&quot;2&quot;&gt;(Note: Set environment variable SIGROKDECODE_DIR to add a custom directory)&lt;/td&gt;&lt;/tr&gt;</source>
-        <translation>&lt;tr&gt; &lt;td colspan = &quot;2&quot;&gt; (Nota: Establecer variable de entorno SIGROKDECODE_DIR para agregar un directorio personalizado) &lt;/td&gt; &lt;/tr&gt;</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="493"/>
+        <location filename="../pv/dialogs/settings.cpp" line="484"/>
         <source>Supported hardware drivers:</source>
         <translation>Controladores de hardware soportados:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="500"/>
+        <location filename="../pv/dialogs/settings.cpp" line="491"/>
         <source>Supported input formats:</source>
         <translation>Formatos de entrada soportados:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="507"/>
+        <location filename="../pv/dialogs/settings.cpp" line="498"/>
         <source>Supported output formats:</source>
         <translation>Formatos de salida soportados:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="515"/>
+        <location filename="../pv/dialogs/settings.cpp" line="506"/>
         <source>Supported protocol decoders:</source>
         <translation>Decodificadores de protocolo soportados:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="523"/>
+        <location filename="../pv/dialogs/settings.cpp" line="514"/>
         <source>Available Translations:</source>
         <translation>Traducciones disponibles:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="571"/>
+        <location filename="../pv/dialogs/settings.cpp" line="562"/>
         <source>Log level:</source>
         <translation>Nivel de registro:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="576"/>
+        <location filename="../pv/dialogs/settings.cpp" line="567"/>
         <source> lines</source>
         <translation> líneas</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="585"/>
+        <location filename="../pv/dialogs/settings.cpp" line="576"/>
         <source>Length of background buffer:</source>
         <translation>Longitud del búfer de fondo:</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="591"/>
+        <location filename="../pv/dialogs/settings.cpp" line="582"/>
         <source>&amp;Save to File</source>
         <translation>&amp;Guardar en archivo</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="598"/>
+        <location filename="../pv/dialogs/settings.cpp" line="589"/>
         <source>&amp;Pop out</source>
         <translation>Des&amp;plegar</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="667"/>
+        <location filename="../pv/dialogs/settings.cpp" line="658"/>
         <source>You selected a dark theme.
 Should I set the user-adjustable colors to better suit your choice?
 
@@ -713,7 +708,7 @@ Please keep in mind that PulseView may need a restart to display correctly.</sou
 Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostrarse correctamente.</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="673"/>
+        <location filename="../pv/dialogs/settings.cpp" line="664"/>
         <source>You selected a bright theme.
 Should I set the user-adjustable colors to better suit your choice?
 
@@ -724,37 +719,37 @@ Please keep in mind that PulseView may need a restart to display correctly.</sou
 Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostrarse correctamente.</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="844"/>
+        <location filename="../pv/dialogs/settings.cpp" line="829"/>
         <source>Save Log</source>
         <translation>Guardar registro</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="844"/>
+        <location filename="../pv/dialogs/settings.cpp" line="829"/>
         <source>Log Files (*.txt *.log);;All Files (*)</source>
         <translation>Archivos de registro (*.txt *.log);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="856"/>
+        <location filename="../pv/dialogs/settings.cpp" line="841"/>
         <source>Success</source>
         <translation>Éxito</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="856"/>
+        <location filename="../pv/dialogs/settings.cpp" line="841"/>
         <source>Log saved to %1.</source>
         <translation>Registro guardado en %1.</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="866"/>
+        <location filename="../pv/dialogs/settings.cpp" line="851"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="866"/>
+        <location filename="../pv/dialogs/settings.cpp" line="851"/>
         <source>File %1 could not be written to.</source>
         <translation>No se pudo escribir en el archivo%1.</translation>
     </message>
     <message>
-        <location filename="../pv/dialogs/settings.cpp" line="880"/>
+        <location filename="../pv/dialogs/settings.cpp" line="865"/>
         <source>%1 Log</source>
         <translation>%1 Log</translation>
     </message>
@@ -945,7 +940,7 @@ Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostra
         <translation>&amp;Abrir...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="141"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="137"/>
         <source>Restore Session Setu&amp;p...</source>
         <translation>Restaurar Configu&amp;ración de Sesión...</translation>
     </message>
@@ -954,161 +949,161 @@ Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostra
         <translation type="vanished">G&amp;uardar Como...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="145"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="141"/>
         <source>&amp;Save...</source>
         <translation>&amp;Guardar...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="156"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="148"/>
         <source>Save &amp;As...</source>
         <translation>Guardar Como...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="162"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="154"/>
         <source>Save Selected &amp;Range As...</source>
         <translation>Guardar &amp;Rango Seleccionado Como...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="173"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="161"/>
         <source>Save Session Setu&amp;p...</source>
         <translation>Guardar Confi&amp;guración de Sesión...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="179"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="167"/>
         <source>&amp;Export</source>
         <translation>&amp;Exportar</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="185"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="173"/>
         <source>&amp;Import</source>
         <translation>&amp;Importar</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="189"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="177"/>
         <source>&amp;Connect to Device...</source>
         <translation>&amp;Conectar a Dispositivo...</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="251"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="239"/>
         <source>Add protocol decoder</source>
         <translation>Agregar decodificador de protocolo</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="261"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="249"/>
         <source>Add math signal</source>
-        <translation>Agregar señal matemática</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="277"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="265"/>
         <source>Configure Device</source>
         <translation>Configurar Dispositivo</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="281"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="269"/>
         <source>Configure Channels</source>
         <translation>Configurar Canales</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="395"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="383"/>
         <source>Failed to get sample rate list:</source>
         <translation>Error al obtener la lista de frecuencia de muestreo:</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="458"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="446"/>
         <source>Failed to get sample rate:</source>
         <translation>Error al obtener la frecuencia de muestreo:</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="499"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="487"/>
         <source>Failed to get sample limit list:</source>
         <translation>Error al obtener la lista de límites de muestra:</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="589"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="577"/>
         <source>Failed to configure samplerate:</source>
         <translation>Error al configurar frecuencia de muestreo:</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="616"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="604"/>
         <source>Failed to configure sample count:</source>
         <translation>Error al configurar cuenta de muestras:</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="654"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="642"/>
         <source>Missing Cursors</source>
         <translation>Cursores Faltantes</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="654"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="642"/>
         <source>You need to set the cursors before you can save the data enclosed by them to a session file (e.g. using the Show Cursors button).</source>
         <translation>Debes configurar los cursores antes de poder guardar los datos encerrados en un archivo de sesión (por ejemplo, usando el botón Mostrar Cursores).</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="672"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="660"/>
         <source>Invalid Range</source>
         <translation>Rango Inválido</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="672"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="660"/>
         <source>The cursors don&apos;t define a valid range of samples.</source>
         <translation>Los cursores no definen un rango válido de muestras.</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="684"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="672"/>
         <source>%1 files </source>
         <translation>%1 archivos </translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="692"/>
-        <location filename="../pv/toolbars/mainbar.cpp" line="742"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="680"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="730"/>
         <source>All Files</source>
         <translation>Todos los archivos</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="696"/>
-        <location filename="../pv/toolbars/mainbar.cpp" line="873"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="684"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="861"/>
         <source>Save File</source>
         <translation>Guardar Archivo</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="708"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="696"/>
         <source>Export %1</source>
         <translation>Exportar %1</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="739"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="727"/>
         <source>%1 files</source>
         <translation>%1 archivos</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="750"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="738"/>
         <source>Import File</source>
         <translation>Importar Archivo</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="759"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="747"/>
         <source>Import %1</source>
         <translation>Importar %1</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="832"/>
-        <location filename="../pv/toolbars/mainbar.cpp" line="890"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="820"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="878"/>
         <source>Open File</source>
         <translation>Abrir Archivo</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="832"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="820"/>
         <source>sigrok Sessions (*.sr);;All Files (*)</source>
         <translation>Sesiones sigrok (*sr);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="873"/>
-        <location filename="../pv/toolbars/mainbar.cpp" line="890"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="861"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="878"/>
         <source>PulseView Session Setups (*.pvs);;All Files (*)</source>
         <translation>Configurciones de Sesión de PulseView (*.pvs);;Todos los Archivos (*)</translation>
     </message>
     <message>
-        <location filename="../pv/toolbars/mainbar.cpp" line="958"/>
+        <location filename="../pv/toolbars/mainbar.cpp" line="946"/>
         <source>Total sampling time: %1</source>
         <translation>Tiempo de muestreo total: %1</translation>
     </message>
@@ -1136,30 +1131,30 @@ Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostra
         <translation>&amp;Guardar...</translation>
     </message>
     <message>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="270"/>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="310"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="266"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="306"/>
         <source>Save Binary Data</source>
         <translation>Guardar Datos Binarios</translation>
     </message>
     <message>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="270"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="266"/>
         <source>Binary Data Files (*.bin);;All Files (*)</source>
         <translation>Archivos de Datos Binarios (*.bin);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="289"/>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="349"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="285"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="337"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="289"/>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="349"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="285"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="337"/>
         <source>File %1 could not be written to.</source>
         <translation>No se pudo escribir en el archivo%1.</translation>
     </message>
     <message>
-        <location filename="../pv/views/decoder_binary/view.cpp" line="310"/>
+        <location filename="../pv/views/decoder_binary/view.cpp" line="306"/>
         <source>Hex Dumps (*.txt);;All Files (*)</source>
         <translation>Volcados hexadecimales (*.txt);;Todos los archivos (*)</translation>
     </message>
@@ -1357,118 +1352,118 @@ Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostra
 <context>
     <name>pv::views::trace::DecodeTrace</name>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="456"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="446"/>
         <source>&lt;p&gt;&lt;i&gt;No decoders in the stack&lt;/i&gt;&lt;/p&gt;</source>
         <translation>&lt;p&gt;&lt;i&gt;No hay decodificadores en la pila.&lt;/i&gt;&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="467"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="457"/>
         <source>&lt;i&gt;* Required channels&lt;/i&gt;</source>
         <translation>&lt;i&gt;* Canales requeridos&lt;/i&gt;</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="471"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="461"/>
         <source>Stack Decoder</source>
         <translation>Apilar Decodificador</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="472"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="462"/>
         <source>Stack a higher-level decoder on top of this one</source>
         <translation>Apilar un decodificador de nivel superior encima de este</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="486"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="476"/>
         <source>Delete</source>
         <translation>Eliminar</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="528"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="518"/>
         <source>Resume decoding</source>
         <translation>Reanudar decodificación</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="535"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="525"/>
         <source>Pause decoding</source>
         <translation>Pausar decodificación</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="543"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="533"/>
         <source>Copy annotation text to clipboard</source>
         <translation>Copiar texto de anotación al portapapeles</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="552"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="542"/>
         <source>Export all annotations</source>
         <translation>Exportar todas las anotaciones</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="559"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="549"/>
         <source>Export all annotations for this row</source>
         <translation>Exportar todas las anotaciones para esta fila</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="568"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="558"/>
         <source>Export all annotations, starting here</source>
         <translation>Exportar todas las anotaciones, comenzando aquí</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="575"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="565"/>
         <source>Export annotations for this row, starting here</source>
         <translation>Exportar todas las anotaciones para esta fila, comenzando aquí</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="584"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="574"/>
         <source>Export all annotations within cursor range</source>
         <translation>Exportar todas las anotaciones dentro del rango del cursor</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="591"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="581"/>
         <source>Export annotations for this row within cursor range</source>
         <translation>Exportar todas las anotaciones para esta fila dentro del rango del cursor</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1079"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1060"/>
         <source>%1:
 %2</source>
         <translation>%1\n%2</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1123"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1104"/>
         <source>&lt;b&gt;%1&lt;/b&gt; (%2) %3</source>
         <translation>&lt;b&gt;%1&lt;/b&gt; (%2) %3</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1192"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1173"/>
         <source>Export annotations</source>
         <translation>Exportar anotaciones</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1192"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1173"/>
         <source>Text Files (*.txt);;All Files (*)</source>
         <translation>Archivos de texto (*.txt);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1257"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1238"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1257"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1238"/>
         <source>File %1 could not be written to.</source>
         <translation>No se pudo escribir en el archivo%1.</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1324"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1291"/>
         <source>Show this row</source>
         <translation>Mostrar esta fila</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1335"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1302"/>
         <source>Show All</source>
         <translation>Mostrar todo</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/decodetrace.cpp" line="1343"/>
+        <location filename="../pv/views/trace/decodetrace.cpp" line="1310"/>
         <source>Hide All</source>
         <translation>Ocultar todo</translation>
     </message>
@@ -1502,47 +1497,47 @@ Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostra
 <context>
     <name>pv::views::trace::LogicSignal</name>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="423"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="734"/>
         <source>No trigger</source>
         <translation>Sin trigger</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="428"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="739"/>
         <source>Trigger on rising edge</source>
         <translation>Trigger en flanco de subida</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="433"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="744"/>
         <source>Trigger on high level</source>
         <translation>Trigger en nivel alto</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="438"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="749"/>
         <source>Trigger on falling edge</source>
         <translation>Trigger en flanco de bajada</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="443"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="754"/>
         <source>Trigger on low level</source>
         <translation>Trigger en nivel bajo</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="448"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="759"/>
         <source>Trigger on rising or falling edge</source>
         <translation>Trigger en flanco de subida o bajada</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="535"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="846"/>
         <source> pixels</source>
         <translation> pixeles</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="539"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="850"/>
         <source>Trace height</source>
         <translation>Altura del trazo</translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/logicsignal.cpp" line="563"/>
+        <location filename="../pv/views/trace/logicsignal.cpp" line="874"/>
         <source>Trigger</source>
         <translation>Trigger</translation>
     </message>
@@ -1552,359 +1547,358 @@ Por favor ten en cuenta que Pulseview tal vez se tenga que reiniciar para mostra
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="88"/>
         <source>Math Expression Editor</source>
-        <translation>Editor de expresiones matemáticas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="93"/>
         <source>Inputs:</source>
-        <translation>Entradas:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="99"/>
         <source>Variables:</source>
-        <translation>Variables:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="101"/>
         <source>Basic operators:</source>
-        <translation>Operadores básicos:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="108"/>
         <source>Assignments:</source>
-        <translation>Asignaciones:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="118"/>
         <source>General purpose functions:</source>
-        <translation>Funciones de propósito general:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="119"/>
         <source>abs(x)		Absolute value of x</source>
-        <translation>abs(x)		Valor absoluto de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="120"/>
         <source>avg(x, y, ...)	Average of all input values</source>
-        <translation>avg(x, y, ...)	Promedio de todos los valores de entrada</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="121"/>
         <source>ceil(x)		Smallest integer that is greater than or equal to x</source>
-        <translation>ceil(x)		Entero más pequeño que es mayor o igual a x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="122"/>
         <source>clamp(lb, x, ub)	Clamp x in range between lb and ub, where lb &lt; ub</source>
-        <translation>clamp(lb, x, ub)	Fija x en el rango entre lb y ub, donde lb &lt; ub</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="123"/>
         <source>equal(x, y)	Equality test between x and y using normalised epsilon</source>
-        <translation>equal(x, y)	Prueba de igualdad entre x e y usando epsilon normalizado</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="124"/>
         <source>erf(x)		Error function of x</source>
-        <translation>erf(x)		Función error de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="125"/>
         <source>erfc(x)		Complimentary error function of x</source>
-        <translation>erfc(x)		Función de error complementario de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="126"/>
         <source>exp(x)		e to the power of x</source>
-        <translation>exp(x)		e a la potencia de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="127"/>
         <source>expm1(x)	e to the power of x minus 1, where x is very small.</source>
-        <translation>expm1(x)	e a la potencia de x menos 1, donde z es muy pequeño.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="128"/>
         <source>floor(x)		Largest integer that is less than or equal to x</source>
-        <translation>floor(x)		Entero más grande que is menor o igual a x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="129"/>
         <source>frac(x)		Fractional portion of x</source>
-        <translation>frac(x)		Porción fraccional de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="130"/>
         <source>hypot(x)		Hypotenuse of x and y (i.e. sqrt(x*x + y*y))</source>
-        <translation>hypot(x)		Hipotenusa de x e y (es decir sqrt(x*x + y*y))</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="131"/>
         <source>iclamp(lb, x, ub)	Inverse-clamp x outside of the range lb and ub, where lb &lt; ub.
 		If x is within the range it will snap to the closest bound</source>
-        <translation>iclamp(lb, x, ub)	Fijación inversa de x fuera del rango lb y ub, donde lb &lt; ub.
-		Si x está en el rango se fijará al límite más cercano</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="132"/>
         <source>inrange(lb, x, ub)	In-range returns true when x is within the range lb and ub, where lb &lt; ub.</source>
-        <translation>inrange(lb, x, ub)	En-rango regresa verdadero cuando x está en el rango lb y ub, donde lb &lt; ub.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="133"/>
         <source>log(x)		Natural logarithm of x</source>
-        <translation>log(x)		Logaritmo natural de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="134"/>
         <source>log10(x)		Base 10 logarithm of x</source>
-        <translation>log10(x)		Logaritmo base 10 de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="138"/>
         <source>log1p(x)		Natural logarithm of 1 + x, where x is very small</source>
-        <translation>log1p(x)		Logaritmo natural de 1 + x, donde x es muy pequeño</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="139"/>
         <source>log2(x)		Base 2 logarithm of x</source>
-        <translation>log2(x)		Logaritmo base 2 de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="140"/>
         <source>logn(x)		Base N logarithm of x, where n is a positive integer</source>
-        <translation>logn(x)		Logaritmo base N de x, donde n es un entero positivo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="141"/>
         <source>max(x, y, ...)	Largest value of all the inputs</source>
-        <translation>max(x, y, ...)	Valor más grande de todas las entradas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="142"/>
         <source>min(x, y, ...)	Smallest value of all the inputs</source>
-        <translation>min(x, y, ...)	Valor más pequeño de todas las entradas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="143"/>
         <source>mul(x, y, ...)	Product of all the inputs</source>
-        <translation>mul(x, y, ...)	Producto de todas las entradas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="144"/>
         <source>ncdf(x)		Normal cumulative distribution function</source>
-        <translation>ncdf(x)		Función de distribución acumulativa normal</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="145"/>
         <source>nequal(x, y)	Not-equal test between x and y using normalised epsilon</source>
-        <translation>nequal(x, y)	Prueba de no igualdad entre x e y usando epsilon normalizado</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="146"/>
         <source>pow(x, y)	x to the power of y</source>
-        <translation>pow(x, y)	x a la potencia de y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="147"/>
         <source>root(x, n)	Nth-Root of x, where n is a positive integer</source>
-        <translation>root(x, n)	Enésima raíz de x, donde n es un entero positivo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="148"/>
         <source>round(x)		Round x to the nearest integer</source>
-        <translation>round(x)		Redondear x al entero más cercano</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="149"/>
         <source>roundn(x, n)	Round x to n decimal places, where n &gt; 0 and is an integer</source>
-        <translation>roundn(x, n)	Redondear x a n lugares decimales, donde n &gt; 0 y es un entero</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="150"/>
         <source>sgn(x)		Sign of x; -1 if x &lt; 0, +1 if x &gt; 0, else zero</source>
-        <translation>sgn(x)		Sigon de x; -1 si x &lt; 0, +1 si x &gt; 0, otro cero</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="151"/>
         <source>sqrt(x)		Square root of x, where x &gt;= 0</source>
-        <translation>sqrt(x)		Raíz cuadrada de x, donde x &gt;= 0</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="152"/>
         <source>sum(x, y, ..,)	Sum of all the inputs</source>
-        <translation>sum(x, y, ..,)	Suma de todas las entradas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="153"/>
         <source>swap(x, y)	Swap the values of the variables x and y and return the current value of y</source>
-        <translation>swap(x, y)	Intercambia los valores de las variables x e y y regresa el valor actual de y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="154"/>
         <source>trunc(x)		Integer portion of x</source>
-        <translation>trunc(x)		Porción entera de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="158"/>
         <source>Trigonometry functions:</source>
-        <translation>Funciones trigonométricas:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="159"/>
         <source>acos(x)		Arc cosine of x expressed in radians. Interval [-1,+1]</source>
-        <translation>acos(x)		Arco coseno de x expresado en radianes. Intervalo [-1,+1]</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="160"/>
         <source>acosh(x)		Inverse hyperbolic cosine of x expressed in radians</source>
-        <translation>acosh(x)		Coseno hiperbólico inverso de x expresado en radianes</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="161"/>
         <source>asin(x)		Arc sine of x expressed in radians. Interval [-1,+1]</source>
-        <translation>asin(x)		Arco seno de x expresado en radianes. Intervalo [-1,+1]</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="162"/>
         <source>asinh(x)		Inverse hyperbolic sine of x expressed in radians</source>
-        <translation>asinh(x)		Seno hiperbólico inverso de x expresado en radianes</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="163"/>
         <source>atan(x)		Arc tangent of x expressed in radians. Interval [-1,+1]</source>
-        <translation>atan(x)		Arco tangente de x expresado en radianes. Intervalo [-1,+1]</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="164"/>
         <source>atan2(x, y)	Arc tangent of (x / y) expressed in radians. [-pi,+pi]  </source>
-        <translation>atan2(x, y)	Arco tangente de (x / y) expresado en radianes. [-pi,+pi]  </translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="165"/>
         <source>atanh(x)		Inverse hyperbolic tangent of x expressed in radians</source>
-        <translation>atanh(x)		Tangente hiperbólica inversa de x expresada en radianes</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="166"/>
         <source>cos(x)		Cosine of x</source>
-        <translation>cos(x)		Coseno de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="167"/>
         <source>cosh(x)		Hyperbolic cosine of x</source>
-        <translation>cosh(x)		Coseno hiperbólico de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="168"/>
         <source>cot(x)		Cotangent of x</source>
-        <translation>cot(x)		Cotangente de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="169"/>
         <source>csc(x)		Cosectant of x</source>
-        <translation>csc(x)		Cosecante de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="170"/>
         <source>sec(x)		Secant of x</source>
-        <translation>sec(x)		Secante de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="171"/>
         <source>sin(x)		Sine of x</source>
-        <translation>sin(x)		Seno de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="172"/>
         <source>sinc(x)		Sine cardinal of x</source>
-        <translation>sinc(x)		Seno cardinal de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="173"/>
         <source>sinh(x)		Hyperbolic sine of x</source>
-        <translation>sinh(x)		Seno hiperbólico de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="174"/>
         <source>tan(x)		Tangent of x</source>
-        <translation>tan(x)		Tangente de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="175"/>
         <source>tanh(x)		Hyperbolic tangent of x</source>
-        <translation>tanh(x)		Tangente hiperbólica de x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="176"/>
         <source>deg2rad(x)	Convert x from degrees to radians</source>
-        <translation>deg2rad(x)	Convierte x de grados sexagesimales a radianes</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="177"/>
         <source>deg2grad(x)	Convert x from degrees to gradians</source>
-        <translation>deg2grad(x)	Convierte x de grados sexagesimales a grados centesimales</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="178"/>
         <source>rad2deg(x)	Convert x from radians to degrees</source>
-        <translation>rad2deg(x)	Convierte x de radianes a grados sexagesimales</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="179"/>
         <source>grad2deg(x)	Convert x from gradians to degrees</source>
-        <translation>grad2deg(x)	Convierte x de grados centesimales a grados sexagesimales</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="183"/>
         <source>Logic operators:</source>
-        <translation>Operadores lógicos:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="200"/>
         <source>Comparisons:</source>
-        <translation>Comparaciones:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="201"/>
         <source>x = y or x == y	True only if x is strictly equal to y</source>
-        <translation>x = y o x == y	Verdadero solo si x es estrictemente igual a y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="202"/>
         <source>x &lt;&gt; y or x != y	True only if x does not equal y</source>
-        <translation>x &lt;&gt; y o x != y	Verdadero solo si x no es igual a y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="203"/>
         <source>x &lt; y		True only if x is less than y</source>
-        <translation>x &lt; y		Verdadero solo si x es menor que y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="204"/>
         <source>x &lt;= y		True only if x is less than or equal to y</source>
-        <translation>x &lt;= y		Verdadero solo si x es menor o igual a y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="205"/>
         <source>x &gt; y		True only if x is greater than y</source>
-        <translation>x &gt; y		Verdadero solo si x es mayor que y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="206"/>
         <source>x &gt;= y		True only if x is greater than or equal to y</source>
-        <translation>x &gt;= y		Verdadero solo si x es mayor o igual a y</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="207"/>
         <source>Flow control:</source>
-        <translation>Fujo de cotrol:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="208"/>
         <source>{ ... }		Beginning and end of instruction block</source>
-        <translation>{ ... }		Inicio y fin de un bloque de instrucciones</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="209"/>
@@ -1913,16 +1907,12 @@ if (x) y;			variant without implied else
 if (x) { y };		variant with an instruction block
 if (x) y; else z;		variant with explicit else
 if (x) { y } else { z };	variant with instruction blocks</source>
-        <translation>if (x, y, z)	Si x es verdadero entonces regresa y si no regresa z
-if (x) y;			variante sin si no implicado
-if (x) { y };		variante con un bloque de instrucción
-if (x) y; else z;		variante con si no explícito
-if (x) { y } else { z };	variante con bloques de instrucciones</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="210"/>
         <source>x ? y : z	Ternary operator, equivalent to &apos;if (x, y, z)&apos;</source>
-        <translation>x ? y : z	Operador ternario, equivalente a &apos;if (x, y, z)&apos;</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="211"/>
@@ -1931,20 +1921,14 @@ if (x) { y } else { z };	variante con bloques de instrucciones</translation>
  case x &lt; 1: b;	conditions hold true, the default action is used
  default:     c;	to determine the return value
 }</source>
-        <translation>switch {		La primera condición de caso verdadera que es encontrada
- case x &gt; 1: a;	determina el resultado del interruptor. Si ninguno de las condiciones de
- case x &lt; 1: b;	los casos se mantienen verdaderas, la acción predeterminada se usa
- default:     c;	para determinar el valor de retorno
-}</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="215"/>
         <source>while (conditon) {	Evaluates expression repeatedly as long as condition is true,
  expression;	returning the last value of expression
 }</source>
-        <translation>while (conditon) {	Evalúa la expresión repetidamente siempre que la condición sea verdadera,
-expresión; devuelve el último valor de la expresión
-}</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="216"/>
@@ -1952,133 +1936,127 @@ expresión; devuelve el último valor de la expresión
  expression;	returning the last value of expression
 until (condition)
 </source>
-        <translation>repeat		Evalúa la expresión repetidamente siempre que la condición sea falsa
-expresión; devuelve el último valor de la expresión
-hasta que (condición)
-</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="217"/>
         <source>for (var x := 0; condition; x += 1) {	Repeatedly evaluates expression while the condition is true,
  expression			while evaluating the &apos;increment&apos; expression on each loop
 }</source>
-        <translation>for (var x := 0; condición; x += 1) {	Evalua repetidamente la expresión mientras la condición sea verdadera,
- expresión			mientras se evalúa la expresión de &apos;incremento&apos; en cada bucle
-}</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="218"/>
         <source>break		Terminates the execution of the nearest enclosed loop, returning NaN</source>
-        <translation>break		Finaliza la ejecución del bucle cerrado más cercano, devolviendo NaN</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="219"/>
         <source>break[x]		Terminates the execution of the nearest enclosed loop, returning x</source>
-        <translation>break[x]		Finaliza la ejecución del bucle cerrado más cercano, devolviendo x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="220"/>
         <source>continue		Interrupts loop execution and resumes with the next loop iteration</source>
-        <translation>continue		Interrumpe la ejecución del bucle y se reanuda con la siguiente iteración de bucle</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="221"/>
         <source>return[x]		Returns immediately from within the current expression, returning x</source>
-        <translation>return[x]		Devuelve inmediatamente desde la expresión actual, regresando x</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="222"/>
         <source>~(expr; expr; ...)	Evaluates each sub-expression and returns the value of the last one
 ~{expr; expr; ...}</source>
-        <translation>~(expr; expr; ...)	Evalúa cada subexpresión y devuelve el valor de la última
-~{expr; expr; ...}</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="234"/>
         <source>Copy to expression</source>
-        <translation>Copiar a expresión</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="247"/>
         <source>Basics</source>
-        <translation>Básicas</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="248"/>
         <source>Functions 1</source>
-        <translation>Funciones 1</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="249"/>
         <source>Functions 2</source>
-        <translation>Funciones 2</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="250"/>
         <source>Trigonometry</source>
-        <translation>Trigonometría</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="251"/>
         <source>Logic</source>
-        <translation>Lógica</translation>
+        <translation type="unfinished">Lógico</translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="252"/>
         <source>Flow Control 1</source>
-        <translation>Flujo de control 1</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="253"/>
         <source>Flow Control 2</source>
-        <translation>Flujo de control 2</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="254"/>
         <source>Examples</source>
-        <translation>Ejemplos</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>pv::views::trace::MathSignal</name>
     <message>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="317"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="313"/>
         <source>Expression</source>
-        <translation>Espresión</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="321"/>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="331"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="317"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="327"/>
         <source>same as session</source>
-        <translation>igual que la sesión</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="322"/>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="332"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="318"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="328"/>
         <source>100</source>
-        <translation>100</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="319"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="329"/>
+        <source>10000</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="320"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="330"/>
+        <source>1000000</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/mathsignal.cpp" line="323"/>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="333"/>
-        <source>10000</source>
-        <translation>10000</translation>
-    </message>
-    <message>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="324"/>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="334"/>
-        <source>1000000</source>
-        <translation>1000000</translation>
-    </message>
-    <message>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="327"/>
         <source>Number of Samples</source>
-        <translation>Número de muestras</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../pv/views/trace/mathsignal.cpp" line="335"/>
+        <location filename="../pv/views/trace/mathsignal.cpp" line="331"/>
         <source>Sample rate</source>
-        <translation>Tasa de muestreo</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2119,7 +2097,7 @@ hasta que (condición)
     <message>
         <location filename="../pv/views/trace/signal.cpp" line="167"/>
         <source>Remove</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../pv/views/trace/signal.cpp" line="169"/>
