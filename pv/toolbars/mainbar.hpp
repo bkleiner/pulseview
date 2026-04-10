@@ -83,6 +83,8 @@ private:
 	 * containing the last file that was saved.
 	 */
 	static const char *SettingSaveDirectory;
+	static const char *SettingLastSampleRate;
+	static const char *SettingLastSampleCount;
 
 public:
 	MainBar(Session &session, QWidget *parent,

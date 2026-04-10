@@ -87,6 +87,8 @@ const uint64_t MainBar::DefaultSampleCount = 1000000;
 
 const char *MainBar::SettingOpenDirectory = "MainWindow/OpenDirectory";
 const char *MainBar::SettingSaveDirectory = "MainWindow/SaveDirectory";
+const char *MainBar::SettingLastSampleRate = "MainWindow/LastSampleRate";
+const char *MainBar::SettingLastSampleCount = "MainWindow/LastSampleCount";
 
 MainBar::MainBar(Session &session, QWidget *parent, pv::views::trace::View *view) :
 	StandardBar(session, parent, view, false),
@@ -485,7 +487,11 @@ void MainBar::update_sample_count_selector()
 	bool default_count_set = false;
 
 	if (sample_count == 0) {
-		sample_count = DefaultSampleCount;
+		QSettings settings;
+		if (settings.contains(SettingLastSampleCount))
+			sample_count = settings.value(SettingLastSampleCount).toULongLong();
+		else
+			sample_count = DefaultSampleCount;
 		default_count_set = true;
 	}
 
@@ -509,7 +515,11 @@ void MainBar::update_sample_count_selector()
 		auto gvar = sr_dev->config_get(ConfigKey::LIMIT_SAMPLES);
 		sample_count = g_variant_get_uint64(gvar.gobj());
 		if (sample_count == 0) {
-			sample_count = DefaultSampleCount;
+			QSettings settings;
+			if (settings.contains(SettingLastSampleCount))
+				sample_count = settings.value(SettingLastSampleCount).toULongLong();
+			else
+				sample_count = DefaultSampleCount;
 			default_count_set = true;
 		}
 		sample_count = min(max(sample_count, MinSampleCount),
@@ -567,6 +577,16 @@ void MainBar::update_device_config_widgets()
 	// Update sweep timing widgets.
 	update_sample_count_selector();
 	update_sample_rate_selector();
+
+	// Restore last used sample rate if available
+	QSettings settings;
+	if (settings.contains(SettingLastSampleRate)) {
+		uint64_t saved_rate = settings.value(SettingLastSampleRate).toULongLong();
+		if (saved_rate > 0 && sample_rate_.value() != saved_rate) {
+			sample_rate_.set_value(saved_rate);
+			commit_sample_rate();
+		}
+	}
 }
 
 void MainBar::commit_sample_rate()
@@ -585,6 +605,10 @@ void MainBar::commit_sample_rate()
 		sr_dev->config_set(ConfigKey::SAMPLERATE,
 			Glib::Variant<guint64>::create(sample_rate));
 		update_sample_rate_selector();
+
+		QSettings settings;
+		settings.setValue(SettingLastSampleRate,
+			QVariant::fromValue(static_cast<quint64>(sample_rate)));
 	} catch (Error& error) {
 		qDebug() << tr("Failed to configure samplerate:") << error.what();
 		return;
@@ -612,6 +636,10 @@ void MainBar::commit_sample_count()
 			sr_dev->config_set(ConfigKey::LIMIT_SAMPLES,
 				Glib::Variant<guint64>::create(sample_count));
 			update_sample_count_selector();
+
+			QSettings settings;
+			settings.setValue(SettingLastSampleCount,
+				QVariant::fromValue(static_cast<quint64>(sample_count)));
 		} catch (Error& error) {
 			qDebug() << tr("Failed to configure sample count:") << error.what();
 			return;
