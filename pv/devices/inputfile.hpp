@@ -49,6 +49,8 @@ public:
 		shared_ptr<sigrok::InputFormat> format,
 		const map<string, Glib::VariantBase> &options);
 
+	~InputFile();
+
 	/**
 	 * Constructor that loads a file using the metadata saved by
 	 * save_meta_to_settings() before.

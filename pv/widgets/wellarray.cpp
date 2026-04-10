@@ -114,6 +114,14 @@ WellArray::WellArray(int rows, int cols, QWidget *parent)
     selRow = -1;
 }
 
+WellArray::~WellArray()
+{
+    if (d) {
+        delete[] d->brush;
+        delete d;
+    }
+}
+
 QSize WellArray::sizeHint() const
 {
     ensurePolished();

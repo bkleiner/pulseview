@@ -237,6 +237,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 	}
 
 	srd_inst_channel_set_all(decoder_inst_, channels);
+	g_hash_table_destroy(channels);
 
 	srd_inst_initial_pins_set_all(decoder_inst_, init_pin_states);
 	g_array_free(init_pin_states, true);

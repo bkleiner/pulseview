@@ -56,6 +56,7 @@ InputFile::InputFile(const shared_ptr<sigrok::Context> &context,
 	context_(context),
 	format_(format),
 	options_(options),
+	f(nullptr),
 	interrupt_(false)
 {
 }
@@ -64,6 +65,7 @@ InputFile::InputFile(const shared_ptr<sigrok::Context> &context,
 	QSettings &settings):
 	File(""),
 	context_(context),
+	f(nullptr),
 	interrupt_(false)
 {
 	file_name_ = settings.value("filename").toString().toStdString();
@@ -90,6 +92,11 @@ InputFile::InputFile(const shared_ptr<sigrok::Context> &context,
 		qWarning() << "Could not find input format" << format_name <<
 			"needed to restore session input file";
 	}
+}
+
+InputFile::~InputFile()
+{
+	delete f;
 }
 
 void InputFile::save_meta_to_settings(QSettings &settings)

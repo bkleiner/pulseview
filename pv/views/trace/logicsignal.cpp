@@ -922,7 +922,7 @@ const QIcon* LogicSignal::get_icon(const char *path)
 		icon_cache_.insert(path, icon);
 	}
 
-	return icon_cache_.take(path);
+	return icon_cache_.object(path);
 }
 
 const QPixmap* LogicSignal::get_pixmap(const char *path)
@@ -932,7 +932,7 @@ const QPixmap* LogicSignal::get_pixmap(const char *path)
 		pixmap_cache_.insert(path, pixmap);
 	}
 
-	return pixmap_cache_.take(path);
+	return pixmap_cache_.object(path);
 }
 
 void LogicSignal::update_logic_level_offsets()
