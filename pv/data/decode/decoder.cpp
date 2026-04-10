@@ -233,7 +233,7 @@ srd_decoder_inst* Decoder::create_decoder_inst(srd_session *session)
 		GVariant *const gvar = g_variant_new_int32(ch->bit_id);  // bit_id = bit position
 		g_variant_ref_sink(gvar);
 		// key is channel name (pdch->id), value is bit position in each sample (gvar)
-		g_hash_table_insert(channels, ch->pdch_->id, gvar);
+		g_hash_table_insert(channels, g_strdup(ch->pdch_->id), gvar);
 	}
 
 	srd_inst_channel_set_all(decoder_inst_, channels);

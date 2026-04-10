@@ -167,11 +167,8 @@ void DecodeSignal::reset_decode(bool shutting_down)
 {
 	resume_decode();  // Make sure the decode thread isn't blocked by pausing
 
-	if (stack_config_changed_ || shutting_down)
-		stop_srd_session();
-	else
-		terminate_srd_session();
-
+	// Stop the decode thread before destroying the srd session to avoid
+	// a race with libsigrokdecode's global sessions list
 	if (decode_thread_.joinable()) {
 		decode_interrupt_ = true;
 		decode_input_cond_.notify_one();
@@ -183,6 +180,11 @@ void DecodeSignal::reset_decode(bool shutting_down)
 		logic_mux_cond_.notify_one();
 		logic_mux_thread_.join();
 	}
+
+	if (stack_config_changed_ || shutting_down)
+		stop_srd_session();
+	else
+		terminate_srd_session();
 
 	current_segment_id_ = 0;
 	segments_.clear();
