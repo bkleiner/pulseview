@@ -579,38 +579,45 @@ void LogicSegment::get_surrounding_edges(vector<EdgePair> &dest,
 	if (origin_sample >= sample_count_)
 		return;
 
-	// Put the edges vector on the heap, it can become quite big until we can
-	// use a get_subsampled_edges() implementation that searches backwards
-	vector<EdgePair>* edges = new vector<EdgePair>;
+	vector<EdgePair> edges;
 
-	// Get all edges to the left of origin_sample
-	get_subsampled_edges(*edges, 0, origin_sample, min_length, sig_index, false);
+	// Search backwards from origin_sample using progressively larger windows
+	// to find the nearest edge to the left, avoiding a full scan from sample 0
+	EdgePair left_edge;
+	bool found_left = false;
+	uint64_t search_start = origin_sample;
+	uint64_t window = max((uint64_t)min_length, (uint64_t)1024);
 
-	// If we don't specify "first only", the first and last edge are the states
-	// at samples 0 and origin_sample. If only those exist, there are no edges
-	if (edges->size() == 2) {
-		delete edges;
-		return;
+	while (search_start > 0) {
+		uint64_t start = (search_start > window) ? search_start - window : 0;
+		edges.clear();
+		get_subsampled_edges(edges, start, search_start, min_length, sig_index, false);
+
+		// edges includes state at start and search_start; real edges are in between
+		if (edges.size() > 2) {
+			edges.pop_back();
+			left_edge = edges.back();
+			found_left = true;
+			break;
+		}
+
+		search_start = start;
+		window *= 4;
 	}
 
-	// Dismiss the entry for origin_sample so that back() gives us the
-	// real last entry
-	edges->pop_back();
-	dest.push_back(edges->back());
-	edges->clear();
+	if (!found_left)
+		return;
+
+	dest.push_back(left_edge);
 
 	// Get first edge to the right of origin_sample
-	get_subsampled_edges(*edges, origin_sample, sample_count_, min_length, sig_index, true);
+	edges.clear();
+	get_subsampled_edges(edges, origin_sample, sample_count_, min_length, sig_index, true);
 
-	// "first only" is specified, so nothing needs to be dismissed
-	if (edges->size() == 0) {
-		delete edges;
+	if (edges.size() == 0)
 		return;
-	}
 
-	dest.push_back(edges->front());
-
-	delete edges;
+	dest.push_back(edges.front());
 }
 
 void LogicSegment::reallocate_mipmap_level(MipMapLevel &m)
