@@ -170,6 +170,10 @@ void GlobalSettings::set_defaults_where_needed()
 		value(Key_Dec_ExportFormat).toString() == "%s %d: %c: %1")
 		setValue(Key_Dec_ExportFormat, "%s %d: %r: %1");
 
+	// Keep decoder rows anchored while panning through sparse annotations.
+	if (!contains(Key_Dec_AlwaysShowAllRows))
+		setValue(Key_Dec_AlwaysShowAllRows, true);
+
 	// Default to 500 lines of backlog
 	if (!contains(Key_Log_BufferSize))
 		setValue(Key_Log_BufferSize, 500);

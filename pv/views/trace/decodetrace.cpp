@@ -152,7 +152,8 @@ DecodeTrace::DecodeTrace(pv::Session &session,
 	decode_signal_ = dynamic_pointer_cast<data::DecodeSignal>(base_);
 
 	GlobalSettings settings;
-	always_show_all_rows_ = settings.value(GlobalSettings::Key_Dec_AlwaysShowAllRows).toBool();
+	always_show_all_rows_ = settings.value(
+		GlobalSettings::Key_Dec_AlwaysShowAllRows, true).toBool();
 
 	GlobalSettings::add_change_handler(this);
 
