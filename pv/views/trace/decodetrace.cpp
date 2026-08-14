@@ -315,8 +315,11 @@ void DecodeTrace::paint_mid(QPainter &p, ViewItemPaintParams &pp)
 		}
 
 		deque<const Annotation*> annotations;
+		const uint64_t render_annotation_limit =
+			std::max(pp.width() * 2, 1);
 		decode_signal_->get_annotation_subset(annotations, r.decode_row,
-			current_segment_, sample_range.first, sample_range.second);
+			current_segment_, sample_range.first, sample_range.second,
+			render_annotation_limit);
 
 		// Show row if there are visible annotations, when user wants to see
 		// all rows that have annotations somewhere and this one is one of them

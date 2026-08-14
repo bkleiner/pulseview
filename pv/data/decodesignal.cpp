@@ -583,7 +583,7 @@ uint64_t DecodeSignal::get_annotation_count(const Row* row, uint32_t segment_id)
 
 void DecodeSignal::get_annotation_subset(deque<const Annotation*> &dest,
 	const Row* row, uint32_t segment_id, uint64_t start_sample,
-	uint64_t end_sample) const
+	uint64_t end_sample, uint64_t max_annotations) const
 {
 	lock_guard<mutex> lock(output_mutex_);
 
@@ -600,7 +600,7 @@ void DecodeSignal::get_annotation_subset(deque<const Annotation*> &dest,
 	else
 		rd = &(row_it->second);
 
-	rd->get_annotation_subset(dest, start_sample, end_sample);
+	rd->get_annotation_subset(dest, start_sample, end_sample, max_annotations);
 }
 
 void DecodeSignal::get_annotation_subset(deque<const Annotation*> &dest,

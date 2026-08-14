@@ -63,11 +63,13 @@ public:
 
 	/**
 	 * Extracts annotations between the given sample range into a vector.
-	 * Note: The annotations are unsorted and only annotations that fully
-	 * fit into the sample range are considered.
+	 * Only annotations that overlap the sample range are considered.
+	 * A non-zero max_annotations
+	 * permits sampling the result for display purposes.
 	 */
 	void get_annotation_subset(deque<const pv::data::decode::Annotation*> &dest,
-		uint64_t start_sample, uint64_t end_sample) const;
+		uint64_t start_sample, uint64_t end_sample,
+		uint64_t max_annotations = 0) const;
 
 	const deque<Annotation>& annotations() const;
 
@@ -75,6 +77,7 @@ public:
 
 private:
 	deque<Annotation> annotations_;
+	vector<uint64_t> annotation_block_max_ends_;
 	unordered_map<QString, vector<QString> > ann_texts_;  // unordered_map since pointers must not change
 	Row* row_;
 	uint64_t prev_ann_start_sample_;

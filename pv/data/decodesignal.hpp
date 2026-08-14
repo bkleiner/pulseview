@@ -180,11 +180,13 @@ public:
 
 	/**
 	 * Extracts annotations from a single row into a vector.
-	 * Note: The annotations may be unsorted and only annotations that fully
-	 * fit into the sample range are considered.
+	 * Only annotations that overlap the sample range are considered.
+	 * A non-zero max_annotations
+	 * permits sampling the result for display purposes.
 	 */
 	void get_annotation_subset(deque<const Annotation*> &dest, const Row* row,
-		uint32_t segment_id, uint64_t start_sample, uint64_t end_sample) const;
+		uint32_t segment_id, uint64_t start_sample, uint64_t end_sample,
+		uint64_t max_annotations = 0) const;
 
 	/**
 	 * Extracts annotations from all rows into a vector.

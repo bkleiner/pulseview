@@ -17,6 +17,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <cassert>
 
 #include <pv/data/decode/decoder.hpp>
@@ -28,6 +29,8 @@ using std::vector;
 namespace pv {
 namespace data {
 namespace decode {
+
+static const size_t AnnotationIndexBlockSize = 256;
 
 RowData::RowData(Row* row) :
 	row_(row),
@@ -55,7 +58,7 @@ uint64_t RowData::get_annotation_count() const
 
 void RowData::get_annotation_subset(
 	deque<const pv::data::decode::Annotation*> &dest,
-	uint64_t start_sample, uint64_t end_sample) const
+	uint64_t start_sample, uint64_t end_sample, uint64_t max_annotations) const
 {
 	// Determine whether we must apply per-class filtering or not
 	bool all_ann_classes_enabled = true;
@@ -71,27 +74,44 @@ void RowData::get_annotation_subset(
 			max_ann_class_id = c->id;
 	}
 
-	if (all_ann_classes_enabled) {
-		// No filtering, send everyting out as-is
-		for (const auto& annotation : annotations_)
-			if ((annotation.end_sample() > start_sample) &&
-				(annotation.start_sample() <= end_sample))
-				dest.push_back(&annotation);
-	} else {
-		if (!all_ann_classes_disabled) {
-			// Filter out invisible annotation classes
-			vector<size_t> class_visible;
-			class_visible.resize(max_ann_class_id + 1, 0);
-			for (AnnotationClass* c : row_->ann_classes())
-				if (c->visible())
-					class_visible[c->id] = 1;
+	if (all_ann_classes_disabled || annotations_.empty())
+		return;
 
-			for (const auto& annotation : annotations_)
-				if ((class_visible[annotation.ann_class_id()]) &&
-					(annotation.end_sample() > start_sample) &&
-					(annotation.start_sample() <= end_sample))
-					dest.push_back(&annotation);
-		}
+	// The annotations are ordered by start sample. A prefix maximum of their end
+	// samples, stored once per block, lets us skip annotations before the
+	// requested range without losing a long annotation that overlaps it.
+	const auto max_end_it = std::upper_bound(annotation_block_max_ends_.begin(),
+		annotation_block_max_ends_.end(), start_sample);
+	const size_t first_block = std::distance(
+		annotation_block_max_ends_.begin(), max_end_it);
+	const size_t first_index = std::min(first_block * AnnotationIndexBlockSize,
+		annotations_.size());
+	const auto first = annotations_.begin() + first_index;
+	const auto last = std::upper_bound(first, annotations_.end(), end_sample,
+		[](uint64_t sample, const Annotation& annotation) {
+			return sample < annotation.start_sample();
+		});
+
+	if (all_ann_classes_enabled) {
+		const uint64_t count = std::distance(first, last);
+		const uint64_t stride = (max_annotations && count > max_annotations) ?
+			(count + max_annotations - 1) / max_annotations : 1;
+
+		for (auto it = first; it < last; it += stride)
+			if (it->end_sample() > start_sample)
+				dest.push_back(&(*it));
+	} else {
+		// Filter out invisible annotation classes. Mixed visibility is uncommon,
+		// so retain every visible annotation rather than sampling away a class.
+		vector<size_t> class_visible(max_ann_class_id + 1, 0);
+		for (AnnotationClass* c : row_->ann_classes())
+			if (c->visible())
+				class_visible[c->id] = 1;
+
+		for (auto it = first; it < last; ++it)
+			if (it->end_sample() > start_sample &&
+				class_visible[it->ann_class_id()])
+				dest.push_back(&(*it));
 	}
 }
 
@@ -144,11 +164,35 @@ const Annotation* RowData::emplace_annotation(srd_proto_data *pdata)
 		it = annotations_.emplace(it, pdata->start_sample, pdata->end_sample,
 			storage_entry, ann_class_id, this);
 		result = &(*it);
+
+		const size_t index = std::distance(annotations_.begin(), it);
+		const size_t first_changed_block = index / AnnotationIndexBlockSize;
+		const size_t block_count =
+			(annotations_.size() + AnnotationIndexBlockSize - 1) /
+			AnnotationIndexBlockSize;
+		annotation_block_max_ends_.resize(block_count);
+		uint64_t max_end = first_changed_block ?
+			annotation_block_max_ends_[first_changed_block - 1] : 0;
+		for (size_t block = first_changed_block; block < block_count; block++) {
+			const size_t block_end = std::min(
+				(block + 1) * AnnotationIndexBlockSize, annotations_.size());
+			for (size_t i = block * AnnotationIndexBlockSize; i < block_end; i++)
+				max_end = std::max(max_end, annotations_[i].end_sample());
+			annotation_block_max_ends_[block] = max_end;
+		}
 	} else {
 		annotations_.emplace_back(pdata->start_sample, pdata->end_sample,
 			storage_entry, ann_class_id, this);
 		result = &(annotations_.back());
 		prev_ann_start_sample_ = pdata->start_sample;
+		const size_t block = (annotations_.size() - 1) / AnnotationIndexBlockSize;
+		if (block == annotation_block_max_ends_.size())
+			annotation_block_max_ends_.push_back(std::max(pdata->end_sample,
+				annotation_block_max_ends_.empty() ? uint64_t(0) :
+				annotation_block_max_ends_.back()));
+		else
+			annotation_block_max_ends_.back() = std::max(
+				annotation_block_max_ends_.back(), pdata->end_sample);
 	}
 
 	return result;
