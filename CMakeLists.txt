@@ -46,6 +46,7 @@ option(ENABLE_SIGNALS "Build with UNIX signals" TRUE)
 option(ENABLE_STACKTRACE "Enable stack trace when crashing" FALSE)
 option(ENABLE_DECODE "Build with libsigrokdecode" TRUE)
 option(ENABLE_FLOW "Build with libsigrokflow" FALSE)
+option(ENABLE_MCP "Build the local PulseView MCP server" TRUE)
 option(ENABLE_TESTS "Enable unit tests" FALSE)
 option(STATIC_PKGDEPS_LIBS "Statically link to (pkg-config) libraries" FALSE)
 option(ENABLE_TS_UPDATE "Update .ts source files (Qt l10n)" FALSE)
@@ -155,6 +156,9 @@ set(CMAKE_AUTOMOC TRUE)
 
 # Check for Qt5, and check for Qt6 if Qt5 is not found.
 set(QT_COMPONENTS Core Gui LinguistTools Widgets Svg)
+if(ENABLE_MCP)
+	list(APPEND QT_COMPONENTS Network)
+endif()
 find_package(Qt5 5.3 QUIET COMPONENTS Core)
 if(Qt5_FOUND)
 	find_package(Qt5 5.3 COMPONENTS ${QT_COMPONENTS} REQUIRED)
@@ -179,8 +183,14 @@ endif()
 
 if(Qt5_FOUND)
 	set(QT_LIBRARIES Qt5::Gui Qt5::Widgets Qt5::Svg)
+	if(ENABLE_MCP)
+		list(APPEND QT_LIBRARIES Qt5::Network)
+	endif()
 else()
 	set(QT_LIBRARIES Qt6::Gui Qt6::Widgets Qt6::Svg)
+	if(ENABLE_MCP)
+		list(APPEND QT_LIBRARIES Qt6::Network)
+	endif()
 endif()
 
 set(BOOSTCOMPS filesystem serialization)
@@ -513,6 +523,21 @@ if(ENABLE_DECODE)
 	)
 endif()
 
+if(ENABLE_MCP)
+	list(APPEND pulseview_SOURCES
+		pv/mcp/connection.cpp
+		pv/mcp/protocol.cpp
+		pv/mcp/server.cpp
+		pv/mcp/sessionregistry.cpp
+		pv/mcp/tools.cpp
+	)
+
+	list(APPEND pulseview_HEADERS
+		pv/mcp/connection.hpp
+		pv/mcp/server.hpp
+	)
+endif()
+
 if(WIN32)
 	# Use the sigrok icon for the pulseview.exe executable.
 	set(CMAKE_RC_COMPILE_OBJECT "${CMAKE_RC_COMPILER} -O coff -I${CMAKE_CURRENT_SOURCE_DIR} <SOURCE> <OBJECT>")
@@ -573,6 +598,10 @@ endif()
 
 if(ENABLE_FLOW)
 	add_definitions(-DENABLE_FLOW)
+endif()
+
+if(ENABLE_MCP)
+	add_definitions(-DENABLE_MCP)
 endif()
 
 if(ENABLE_DECODE)
@@ -669,6 +698,11 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} ${PULSEVIEW_LINK_LIBS})
 
+if(ENABLE_MCP AND UNIX)
+	add_executable(pulseview-mcp tools/pulseview-mcp/main.cpp)
+	target_link_libraries(pulseview-mcp ${QT_LIBRARIES})
+endif()
+
 if(WIN32 AND NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 	# Pass -mwindows so that no "DOS box" opens when PulseView is started.
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mwindows")
@@ -680,6 +714,9 @@ endif()
 
 # Install the executable.
 install(TARGETS ${PROJECT_NAME} DESTINATION bin/)
+if(ENABLE_MCP AND UNIX)
+	install(TARGETS pulseview-mcp DESTINATION bin/)
+endif()
 
 # Install the manpage.
 install(FILES doc/pulseview.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1 COMPONENT doc)

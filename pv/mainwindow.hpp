@@ -50,6 +50,12 @@ class ContextBar;
 class MainBar;
 }
 
+#ifdef ENABLE_MCP
+namespace mcp {
+class SessionRegistry;
+}
+#endif
+
 namespace view {
 class View;
 class ViewBase;
@@ -99,6 +105,10 @@ public:
 
 	void save_sessions();
 	void restore_sessions();
+
+#ifdef ENABLE_MCP
+	mcp::SessionRegistry& mcp_session_registry();
+#endif
 
 private:
 	void setup_ui();
@@ -153,6 +163,10 @@ private Q_SLOTS:
 
 private:
 	DeviceManager &device_manager_;
+
+#ifdef ENABLE_MCP
+	std::unique_ptr<mcp::SessionRegistry> mcp_session_registry_;
+#endif
 
 	list< shared_ptr<Session> > sessions_;
 	shared_ptr<Session> last_focused_session_;

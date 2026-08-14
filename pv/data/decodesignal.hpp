@@ -90,6 +90,23 @@ struct DecodeSegment
 	deque<const Annotation*> all_annotations;
 };
 
+struct AnnotationSnapshot
+{
+	uint64_t start_sample;
+	uint64_t end_sample;
+	uint32_t class_id;
+	uint32_t row_index;
+	uint8_t decoder_stack_level;
+	QString class_name;
+	QString class_description;
+	QString row_title;
+	QString row_description;
+	QString decoder_id;
+	QString decoder_name;
+	vector<QString> texts;
+	bool visible;
+};
+
 class DecodeSignal : public SignalBase
 {
 	Q_OBJECT
@@ -175,6 +192,10 @@ public:
 	 * fit into the sample range are considered.
 	 */
 	void get_annotation_subset(deque<const Annotation*> &dest, uint32_t segment_id,
+		uint64_t start_sample, uint64_t end_sample) const;
+
+	/** Copies overlapping annotations while holding the decoder output lock. */
+	vector<AnnotationSnapshot> get_annotation_snapshots(uint32_t segment_id,
 		uint64_t start_sample, uint64_t end_sample) const;
 
 	uint32_t get_binary_data_chunk_count(uint32_t segment_id,

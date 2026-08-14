@@ -370,6 +370,9 @@ Q_SIGNALS:
 	/// Emitted when the cursors are shown/hidden
 	void cursor_state_changed(bool show);
 
+	/// Emitted when the MCP-visible range or cursor context changes.
+	void view_context_changed();
+
 public Q_SLOTS:
 	void trigger_event(int segment_id, util::Timestamp location);
 

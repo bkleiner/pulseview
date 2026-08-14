@@ -610,6 +610,36 @@ void DecodeSignal::get_annotation_subset(deque<const Annotation*> &dest,
 		get_annotation_subset(dest, row, segment_id, start_sample, end_sample);
 }
 
+vector<AnnotationSnapshot> DecodeSignal::get_annotation_snapshots(
+	uint32_t segment_id, uint64_t start_sample, uint64_t end_sample) const
+{
+	lock_guard<mutex> lock(output_mutex_);
+	vector<AnnotationSnapshot> result;
+
+	if (segment_id >= segments_.size())
+		return result;
+
+	for (const Annotation* annotation : segments_.at(segment_id).all_annotations) {
+		if (annotation->end_sample() <= start_sample ||
+			annotation->start_sample() > end_sample)
+			continue;
+
+		const Row* row = annotation->row();
+		const Decoder* decoder = row->decoder();
+		const srd_decoder* srd_decoder = decoder->get_srd_decoder();
+		result.push_back({
+			annotation->start_sample(), annotation->end_sample(),
+			annotation->ann_class_id(), row->index(), decoder->get_stack_level(),
+			annotation->ann_class_name(), annotation->ann_class_description(),
+			row->title(), row->description(), QString::fromUtf8(srd_decoder->id),
+			QString::fromUtf8(srd_decoder->name), *annotation->annotations(),
+			annotation->visible()
+		});
+	}
+
+	return result;
+}
+
 uint32_t DecodeSignal::get_binary_data_chunk_count(uint32_t segment_id,
 	const Decoder* dec, uint32_t bin_class_id) const
 {

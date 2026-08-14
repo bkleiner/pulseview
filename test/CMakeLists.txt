@@ -202,6 +202,24 @@ if(ENABLE_DECODE)
 	)
 endif()
 
+if(ENABLE_MCP)
+	list(APPEND pulseview_TEST_SOURCES
+		${PROJECT_SOURCE_DIR}/pv/mcp/connection.cpp
+		${PROJECT_SOURCE_DIR}/pv/mcp/protocol.cpp
+		${PROJECT_SOURCE_DIR}/pv/mcp/server.cpp
+		${PROJECT_SOURCE_DIR}/pv/mcp/sessionregistry.cpp
+		${PROJECT_SOURCE_DIR}/pv/mcp/tools.cpp
+		mcp/connection.cpp
+		mcp/protocol.cpp
+		mcp/tools.cpp
+	)
+
+	list(APPEND pulseview_TEST_HEADERS
+		${PROJECT_SOURCE_DIR}/pv/mcp/connection.hpp
+		${PROJECT_SOURCE_DIR}/pv/mcp/server.hpp
+	)
+endif()
+
 # On MinGW we need to use static linking.
 if(NOT WIN32)
 	add_definitions(-DBOOST_TEST_DYN_LINK)
@@ -213,4 +231,3 @@ add_executable(pulseview-test
 )
 
 target_link_libraries(pulseview-test ${PULSEVIEW_LINK_LIBS})
-

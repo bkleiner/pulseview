@@ -587,6 +587,7 @@ void View::set_scale(double scale)
 		update_view_range_metaobject();
 
 		scale_changed();
+		view_context_changed();
 	}
 }
 
@@ -599,6 +600,7 @@ void View::set_offset(const pv::util::Timestamp& offset, bool force_update)
 		update_view_range_metaobject();
 
 		offset_changed();
+		view_context_changed();
 	}
 }
 
@@ -976,6 +978,7 @@ void View::show_cursors(bool show)
 		show_cursors_ = show;
 
 		cursor_state_changed(show);
+		view_context_changed();
 		ruler_->update();
 		viewport_->update();
 	}
@@ -1698,6 +1701,8 @@ void View::row_item_appearance_changed(bool label, bool content)
 
 void View::time_item_appearance_changed(bool label, bool content)
 {
+	view_context_changed();
+
 	if (label) {
 		ruler_->update();
 

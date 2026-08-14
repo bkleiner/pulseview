@@ -50,6 +50,10 @@
 #include "views/trace/view.hpp"
 #include "views/trace/standardbar.hpp"
 
+#ifdef ENABLE_MCP
+#include "mcp/sessionregistry.hpp"
+#endif
+
 #ifdef ENABLE_DECODE
 #include "subwindows/decoder_selector/subwindow.hpp"
 #include "views/decoder_binary/view.hpp"
@@ -72,6 +76,9 @@ const QString MainWindow::WindowTitle = tr("PulseView");
 MainWindow::MainWindow(DeviceManager &device_manager, QWidget *parent) :
 	QMainWindow(parent),
 	device_manager_(device_manager),
+#ifdef ENABLE_MCP
+	mcp_session_registry_(new mcp::SessionRegistry()),
+#endif
 	session_selector_(this),
 	icon_red_(":/icons/status-red.svg"),
 	icon_green_(":/icons/status-green.svg"),
@@ -130,6 +137,13 @@ shared_ptr<views::ViewBase> MainWindow::get_active_view() const
 
 	return nullptr;
 }
+
+#ifdef ENABLE_MCP
+mcp::SessionRegistry& MainWindow::mcp_session_registry()
+{
+	return *mcp_session_registry_;
+}
+#endif
 
 shared_ptr<views::ViewBase> MainWindow::add_view(views::ViewType type,
 	Session &session)
@@ -201,6 +215,14 @@ shared_ptr<views::ViewBase> MainWindow::add_view(views::ViewType type,
 	if (type == views::ViewTypeTrace) {
 		views::trace::View *tv =
 			qobject_cast<views::trace::View*>(v.get());
+
+#ifdef ENABLE_MCP
+		Session *const mcp_session = &session;
+		connect(tv, &views::trace::View::view_context_changed,
+			this, [this, mcp_session]() {
+				mcp_session_registry_->changed(mcp_session);
+			});
+#endif
 
 		if (!main_bar) {
 			/* Initial view, create the main bar */
@@ -349,6 +371,10 @@ shared_ptr<Session> MainWindow::add_session()
 
 	sessions_.push_back(session);
 
+#ifdef ENABLE_MCP
+	mcp_session_registry_->add(session);
+#endif
+
 	QMainWindow *window = new QMainWindow();
 	window->setWindowFlags(Qt::Widget);  // Remove Qt::Window flag
 	session_windows_[session] = window;
@@ -377,6 +403,10 @@ void MainWindow::remove_session(shared_ptr<Session> session)
 	// leave this method and the event loop gets a chance to run again.
 	session->stop_capture();
 	QApplication::processEvents();
+
+#ifdef ENABLE_MCP
+	mcp_session_registry_->remove(session.get());
+#endif
 
 	for (const shared_ptr<views::ViewBase>& view : session->views())
 		remove_view(view);
@@ -755,6 +785,10 @@ void MainWindow::on_focused_session_changed(shared_ptr<Session> session)
 {
 	last_focused_session_ = session;
 
+#ifdef ENABLE_MCP
+	mcp_session_registry_->set_active(session.get());
+#endif
+
 	setWindowTitle(session->name() + " - " + WindowTitle);
 
 	// Update the state of the run/stop button, too
@@ -777,6 +811,10 @@ void MainWindow::on_session_name_changed()
 	// Update the corresponding dock widget's name(s)
 	Session *session = qobject_cast<Session*>(QObject::sender());
 	assert(session);
+
+#ifdef ENABLE_MCP
+	mcp_session_registry_->changed(session);
+#endif
 
 	for (const shared_ptr<views::ViewBase>& view : session->views()) {
 		// Get the dock that contains the view
@@ -805,6 +843,10 @@ void MainWindow::on_session_device_changed()
 	Session *session = qobject_cast<Session*>(QObject::sender());
 	assert(session);
 
+#ifdef ENABLE_MCP
+	mcp_session_registry_->changed(session);
+#endif
+
 	// Ignore if caller is not the currently focused session
 	// unless there is only one session
 	if ((sessions_.size() > 1) && (session != last_focused_session_.get()))
@@ -819,6 +861,10 @@ void MainWindow::on_session_capture_state_changed(int state)
 
 	Session *session = qobject_cast<Session*>(QObject::sender());
 	assert(session);
+
+#ifdef ENABLE_MCP
+	mcp_session_registry_->changed(session);
+#endif
 
 	// Ignore if caller is not the currently focused session
 	// unless there is only one session

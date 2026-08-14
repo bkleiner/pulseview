@@ -58,6 +58,9 @@
 #include "pv/globalsettings.hpp"
 #include "pv/logging.hpp"
 #include "pv/mainwindow.hpp"
+#ifdef ENABLE_MCP
+#include "pv/mcp/server.hpp"
+#endif
 #include "pv/session.hpp"
 #include "pv/util.hpp"
 #include "pv/data/segment.hpp"
@@ -165,6 +168,9 @@ void usage()
 		"  -s, --settings                  Load PulseView session setup from file\n"
 		"  -I, --input-format              Input format\n"
 		"  -c, --clean                     Don't restore previous sessions on startup\n"
+#ifdef ENABLE_MCP
+		"      --mcp-socket PATH           Override the MCP Unix-socket path\n"
+#endif
 		"\n", PV_BIN_NAME);
 }
 
@@ -177,6 +183,9 @@ int main(int argc, char *argv[])
 	bool restore_sessions = true;
 	bool do_scan = true;
 	bool show_version = false;
+#ifdef ENABLE_MCP
+	string mcp_socket_path;
+#endif
 
 #ifdef ENABLE_FLOW
 	// Initialise gstreamermm. Must be called before any other GLib stuff.
@@ -207,6 +216,9 @@ int main(int argc, char *argv[])
 			{"input-format", required_argument, nullptr, 'I'},
 			{"clean", no_argument, nullptr, 'c'},
 			{"log-to-stdout", no_argument, nullptr, 's'},
+#ifdef ENABLE_MCP
+			{"mcp-socket", required_argument, nullptr, 1000},
+#endif
 			{nullptr, 0, nullptr, 0}
 		};
 
@@ -269,6 +281,12 @@ int main(int argc, char *argv[])
 		case 'c':
 			restore_sessions = false;
 			break;
+
+#ifdef ENABLE_MCP
+		case 1000:
+			mcp_socket_path = optarg;
+			break;
+#endif
 		}
 	}
 	argc -= optind;
@@ -348,6 +366,18 @@ int main(int argc, char *argv[])
 			else
 				for (string& open_file : open_files)
 					w.add_session_with_file(open_file, open_file_format, open_setup_file);
+
+#ifdef ENABLE_MCP
+			pv::mcp::Server mcp_server(w.mcp_session_registry(), &w);
+			const QString socket_path = QString::fromStdString(mcp_socket_path);
+			if (!mcp_server.listen(socket_path)) {
+				qWarning() << "Could not start PulseView MCP server:"
+					<< mcp_server.error_string();
+			} else {
+				qDebug() << "PulseView MCP server listening at"
+					<< mcp_server.socket_path();
+			}
+#endif
 
 #ifdef ENABLE_SIGNALS
 			if (SignalHandler::prepare_signals()) {
