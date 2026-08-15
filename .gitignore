@@ -68,3 +68,9 @@ test/cmake_install.cmake
 
 # Translation binaries
 *.qm
+
+# makepkg artifacts
+/contrib/pulseview/
+/contrib/src/
+/contrib/pkg/
+/contrib/*.pkg.tar.*
