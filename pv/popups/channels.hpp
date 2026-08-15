@@ -82,11 +82,7 @@ private:
 	void showEvent(QShowEvent *event);
 
 private Q_SLOTS:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	void on_channel_checked(QObject *widget);
-#else
-	void on_channel_checked(QWidget *widget);
-#endif
 
 	void enable_all_channels();
 	void disable_all_channels();

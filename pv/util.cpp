@@ -289,11 +289,7 @@ vector<string> split_string(string text, string separator)
  */
 std::streamsize text_width(const QFontMetrics &metric, const QString &string)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
 	return metric.horizontalAdvance(string);
-#else
-	return metric.width(string);
-#endif
 }
 
 } // namespace util

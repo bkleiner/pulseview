@@ -35,11 +35,10 @@ class TimestampSpinBox : public QAbstractSpinBox
 		READ precision
 		WRITE setPrecision)
 
-	// Needed because of some strange behaviour of the Qt4 MOC that would add
+	// Needed because some older MOC versions would add
 	// a reference to a 'staticMetaObject' member of 'pv::util' (the namespace)
 	// if pv::util::Timestamp is used directly in the Q_PROPERTY macros below.
-	// Didn't happen with the Qt5 MOC in this case, however others have had
-	// similar problems with Qt5: https://bugreports.qt.io/browse/QTBUG-37519
+	// See https://bugreports.qt.io/browse/QTBUG-37519 for a similar issue.
 	typedef pv::util::Timestamp Timestamp;
 
 	Q_PROPERTY(Timestamp singleStep
