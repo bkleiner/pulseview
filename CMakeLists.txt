@@ -142,10 +142,6 @@ if(ENABLE_DECODE)
 	list(APPEND PKGDEPS libsigrokdecode>=0.5.2)
 endif()
 
-if(ANDROID)
-	list(APPEND PKGDEPS libsigrokandroidutils>=0.1.0)
-endif()
-
 pkg_check_modules(LIBSRCXX ${LIBSR_CXX_BINDING})
 if(NOT LIBSRCXX_FOUND OR NOT LIBSRCXX_VERSION)
 	message(FATAL_ERROR "libsigrok C++ bindings missing, check libsigrok's 'configure' output (missing dependencies?)")
@@ -527,13 +523,6 @@ if(WIN32)
 	list(APPEND pulseview_SOURCES pulseviewico.rc)
 endif()
 
-if(ANDROID)
-	list(APPEND pulseview_SOURCES
-		android/assetreader.cpp
-		android/loghandler.cpp
-	)
-endif()
-
 qt6_add_resources(pulseview_RESOURCES_RCC ${pulseview_RESOURCES})
 
 #===============================================================================
@@ -646,16 +635,8 @@ if(ENABLE_STACKTRACE)
 	link_libraries("-no-pie -fno-pie")
 endif()
 
-if(ANDROID)
-	list(APPEND PULSEVIEW_LINK_LIBS "-llog")
-endif()
-
 set(INPUT_FILES_LIST ${pulseview_SOURCES} ${pulseview_RESOURCES_RCC} ${QM_FILES})
-if(ANDROID)
-	add_library(${PROJECT_NAME} SHARED ${INPUT_FILES_LIST})
-else()
-	add_executable(${PROJECT_NAME} ${INPUT_FILES_LIST})
-endif()
+add_executable(${PROJECT_NAME} ${INPUT_FILES_LIST})
 
 target_link_libraries(${PROJECT_NAME} ${PULSEVIEW_LINK_LIBS})
 
@@ -702,7 +683,7 @@ configure_file(contrib/pulseview_cross.nsi.in ${CMAKE_CURRENT_BINARY_DIR}/contri
 set(CPACK_PACKAGE_VERSION_MAJOR ${PV_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PV_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${PV_VERSION_MICRO})
-set(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/README)
+set(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/COPYING)
 set(CPACK_SOURCE_IGNORE_FILES ${CMAKE_CURRENT_BINARY_DIR} ".gitignore" ".git")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PV_VERSION_STRING}")

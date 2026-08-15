@@ -73,7 +73,7 @@ void TimeMarker::set_time(const pv::util::Timestamp& time)
 
 float TimeMarker::get_x() const
 {
-	// Use roundf() from cmath, std::roundf() causes Android issues (see #945).
+	// Use roundf() from cmath for compatibility with older standard libraries.
 	return roundf(((time_ - view_.offset()) / view_.scale()).convert_to<float>()) + 0.5f;
 }
 

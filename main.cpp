@@ -65,12 +65,6 @@
 #include "pv/util.hpp"
 #include "pv/data/segment.hpp"
 
-#ifdef ANDROID
-#include <libsigrokandroidutils/libsigrokandroidutils.h>
-#include "android/assetreader.hpp"
-#include "android/loghandler.hpp"
-#endif
-
 #ifdef _WIN32
 #include <QtPlugin>
 #ifdef QT_STATIC
@@ -197,12 +191,6 @@ int main(int argc, char *argv[])
 
 	Application a(argc, argv);
 
-#ifdef ANDROID
-	srau_init_environment();
-	pv::AndroidLogHandler::install_callbacks();
-	pv::AndroidAssetReader asset_reader;
-#endif
-
 	// Parse arguments
 	while (true) {
 		static const struct option long_options[] = {
@@ -327,9 +315,6 @@ int main(int argc, char *argv[])
 		process_stacktrace(temp_path);
 #endif
 
-#ifdef ANDROID
-	context->set_resource_reader(&asset_reader);
-#endif
 	do {
 
 #ifdef ENABLE_DECODE
