@@ -66,6 +66,9 @@ manual/manual.pdf
 test/cmake_install.cmake
 *_autogen
 
+# Local contributor instructions
+/AGENTS.md
+
 # Translation binaries
 *.qm
 
