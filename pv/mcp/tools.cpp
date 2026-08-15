@@ -217,6 +217,9 @@ QJsonArray Tools::list_tools() const
 	limit.insert(QStringLiteral("type"), QStringLiteral("integer"));
 	limit.insert(QStringLiteral("minimum"), 1);
 	limit.insert(QStringLiteral("maximum"), 1000);
+	limit.insert(QStringLiteral("description"), QStringLiteral(
+		"Page size (default 500, maximum 1000). Follow next_continuation_token "
+		"to retrieve additional pages."));
 	QJsonObject query_properties;
 	query_properties.insert(QStringLiteral("session_id"), session_id);
 	query_properties.insert(QStringLiteral("decode_signal_id"),
@@ -234,10 +237,14 @@ QJsonArray Tools::list_tools() const
 	query_properties.insert(QStringLiteral("text_filter"),
 		QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}});
 	query_properties.insert(QStringLiteral("limit"), limit);
+	query_properties.insert(QStringLiteral("continuation_token"),
+		string_property(QStringLiteral(
+			"Token returned by the previous page; repeat the same query parameters.")));
 	QJsonObject query_tool;
 	query_tool.insert(QStringLiteral("name"), QStringLiteral("query_annotations"));
 	query_tool.insert(QStringLiteral("description"), QStringLiteral(
-		"Query copied protocol-decoder annotations overlapping an explicit, cursor, visible, or full range."));
+		"Query a page of copied protocol-decoder annotations overlapping an explicit, "
+		"cursor, visible, or full range. Follow next_continuation_token until absent."));
 	query_tool.insert(QStringLiteral("inputSchema"), tool_schema(query_properties));
 	query_tool.insert(QStringLiteral("annotations"), annotations);
 
@@ -415,7 +422,7 @@ bool Tools::query_annotations(const QJsonObject& arguments,
 		QStringLiteral("segment_id"), QStringLiteral("range"),
 		QStringLiteral("start_sample"), QStringLiteral("end_sample"),
 		QStringLiteral("visible_only"), QStringLiteral("text_filter"),
-		QStringLiteral("limit")};
+		QStringLiteral("limit"), QStringLiteral("continuation_token")};
 	for (auto it = arguments.begin(); it != arguments.end(); ++it)
 		if (!allowed.contains(it.key())) {
 			error = QStringLiteral("query_annotations does not accept %1").arg(it.key());
@@ -520,14 +527,32 @@ bool Tools::query_annotations(const QJsonObject& arguments,
 	}
 	int limit = arguments.value(QStringLiteral("limit")).toInt(500);
 	if (limit < 1 || limit > 1000) {
-		error = QStringLiteral("limit must be between 1 and 1000");
+		error = QStringLiteral(
+			"limit must be between 1 and 1000; use next_continuation_token for more results");
 		return false;
+	}
+	uint64_t continuation_offset = 0;
+	if (arguments.contains(QStringLiteral("continuation_token"))) {
+		if (!arguments.value(QStringLiteral("continuation_token")).isString()) {
+			error = QStringLiteral("continuation_token must be a string");
+			return false;
+		}
+		bool valid = false;
+		continuation_offset = arguments.value(QStringLiteral("continuation_token"))
+			.toString().toULongLong(&valid);
+		if (!valid || continuation_offset > std::numeric_limits<size_t>::max()) {
+			error = QStringLiteral("Invalid continuation_token");
+			return false;
+		}
 	}
 	const bool visible_only = arguments.value(QStringLiteral("visible_only")).toBool(false);
 	const QString text_filter = arguments.value(QStringLiteral("text_filter")).toString();
 	const QString requested_signal = arguments.value(QStringLiteral("decode_signal_id")).toString();
 	bool requested_signal_found = requested_signal.isEmpty();
 	QJsonArray annotations;
+	size_t total_count = 0;
+	bool truncated = false;
+	QString next_continuation_token;
 #ifdef ENABLE_DECODE
 	vector<AnnotationEvent> events;
 	uint32_t decode_index = 0;
@@ -566,12 +591,19 @@ bool Tools::query_annotations(const QJsonObject& arguments,
 		return (a.annotation.end_sample - a.annotation.start_sample) >
 			(b.annotation.end_sample - b.annotation.start_sample);
 	});
-	const bool truncated = events.size() > static_cast<size_t>(limit);
+	total_count = events.size();
+	const size_t page_start = std::min(
+		static_cast<size_t>(continuation_offset), total_count);
+	const size_t page_size = std::min(static_cast<size_t>(limit),
+		total_count - page_start);
+	const size_t page_end = page_start + page_size;
+	truncated = page_end < total_count;
 	if (truncated)
-		events.resize(static_cast<size_t>(limit));
+		next_continuation_token = QString::number(page_end);
 
 	const double samplerate = entry.session->get_samplerate();
-	for (const AnnotationEvent& event : events) {
+	for (size_t index = page_start; index < page_end; index++) {
+		const AnnotationEvent& event = events[index];
 		const data::AnnotationSnapshot& annotation = event.annotation;
 		QJsonArray texts;
 		for (const QString& text : annotation.texts)
@@ -598,8 +630,6 @@ bool Tools::query_annotations(const QJsonObject& arguments,
 		item.insert(QStringLiteral("visible"), annotation.visible);
 		annotations.append(item);
 	}
-#else
-	const bool truncated = false;
 #endif
 
 	result.insert(QStringLiteral("session_id"), QString::number(entry.id));
@@ -610,7 +640,11 @@ bool Tools::query_annotations(const QJsonObject& arguments,
 	result.insert(QStringLiteral("end_sample"), QString::number(end_sample));
 	result.insert(QStringLiteral("annotations"), annotations);
 	result.insert(QStringLiteral("returned_count"), annotations.size());
+	result.insert(QStringLiteral("total_count"), QString::number(total_count));
 	result.insert(QStringLiteral("truncated"), truncated);
+	if (!next_continuation_token.isEmpty())
+		result.insert(QStringLiteral("next_continuation_token"),
+			next_continuation_token);
 	return true;
 }
 

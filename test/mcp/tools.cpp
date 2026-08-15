@@ -35,6 +35,13 @@ BOOST_AUTO_TEST_CASE(tool_surface)
 		.toObject().value(QStringLiteral("readOnlyHint")).toBool());
 	BOOST_CHECK(!listed.at(4).toObject().value(QStringLiteral("annotations"))
 		.toObject().value(QStringLiteral("readOnlyHint")).toBool());
+
+	const QJsonObject query_tool = listed.at(2).toObject();
+	const QJsonObject query_properties = query_tool.value(QStringLiteral("inputSchema"))
+		.toObject().value(QStringLiteral("properties")).toObject();
+	BOOST_CHECK(query_properties.contains(QStringLiteral("continuation_token")));
+	BOOST_CHECK_EQUAL(query_properties.value(QStringLiteral("limit")).toObject()
+		.value(QStringLiteral("maximum")).toInt(), 1000);
 }
 
 BOOST_AUTO_TEST_CASE(write_tools_require_a_session)
