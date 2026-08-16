@@ -22,6 +22,7 @@
 
 #include <boost/optional.hpp>
 
+#include <QOpenGLWidget>
 #include <QPoint>
 #include <QTimer>
 #include <QTouchEvent>
@@ -44,7 +45,8 @@ namespace trace {
 
 class View;
 
-class Viewport : public ViewWidget, public GlobalSettingsInterface
+class Viewport : public QOpenGLWidget, protected ViewWidgetBase,
+	public GlobalSettingsInterface
 {
 	Q_OBJECT
 
@@ -94,8 +96,17 @@ private:
 	 * @param e the event that triggered this handler.
 	 */
 	bool touch_event(QTouchEvent *event);
+	void selection_changed_event() override;
 
-	void paintEvent(QPaintEvent *event);
+	bool event(QEvent *event) override;
+	void mousePressEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
+	void mouseMoveEvent(QMouseEvent *event) override;
+	void keyPressEvent(QKeyEvent *event) override;
+	void keyReleaseEvent(QKeyEvent *event) override;
+	void leaveEvent(QEvent *event) override;
+
+	void paintEvent(QPaintEvent *event) override;
 
 	void mouseDoubleClickEvent(QMouseEvent *event);
 

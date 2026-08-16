@@ -150,7 +150,7 @@ pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
 
 set(CMAKE_AUTOMOC TRUE)
 
-set(QT_COMPONENTS Core Gui LinguistTools Widgets Svg)
+set(QT_COMPONENTS Core Gui LinguistTools OpenGLWidgets Widgets Svg)
 if(ENABLE_MCP)
 	list(APPEND QT_COMPONENTS Network)
 endif()
@@ -162,11 +162,12 @@ if(WIN32)
 	# https://github.com/mxe/mxe/issues/1642
 	# Not required (and doesn't work) on MSYS2.
 	if(NOT DEFINED ENV{MSYSTEM})
-		pkg_check_modules(QT6ALL REQUIRED Qt6Widgets>=6.2 Qt6Gui>=6.2 Qt6Svg>=6.2)
+		pkg_check_modules(QT6ALL REQUIRED Qt6Widgets>=6.2 Qt6Gui>=6.2
+			Qt6OpenGLWidgets>=6.2 Qt6Svg>=6.2)
 	endif()
 endif()
 
-set(QT_LIBRARIES Qt6::Gui Qt6::Widgets Qt6::Svg)
+set(QT_LIBRARIES Qt6::Gui Qt6::OpenGLWidgets Qt6::Widgets Qt6::Svg)
 if(ENABLE_MCP)
 	list(APPEND QT_LIBRARIES Qt6::Network)
 endif()

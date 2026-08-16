@@ -31,6 +31,7 @@ using std::shared_ptr;
 using std::vector;
 
 class QTouchEvent;
+class QWidget;
 
 namespace pv {
 namespace views {
@@ -39,92 +40,57 @@ namespace trace {
 class View;
 class ViewItem;
 
-class ViewWidget : public QWidget
+class ViewWidgetBase
+{
+protected:
+	ViewWidgetBase(View &parent, QWidget &widget);
+
+	virtual void item_hover(const shared_ptr<ViewItem> &item, QPoint pos);
+	virtual void item_clicked(const shared_ptr<ViewItem> &item);
+	virtual void selection_changed_event() = 0;
+
+	bool accept_drag() const;
+	bool mouse_down() const;
+	void drag_items(const QPoint &delta);
+
+	virtual void drag();
+	virtual void drag_by(const QPoint &delta);
+	virtual void drag_release();
+
+	virtual vector< shared_ptr<ViewItem> > items() = 0;
+	virtual shared_ptr<ViewItem> get_mouse_over_item(const QPoint &pt) = 0;
+
+	void mouse_left_press_event(QMouseEvent *event);
+	void mouse_left_release_event(QMouseEvent *event);
+	virtual bool touch_event(QTouchEvent *event);
+
+	bool handle_event(QEvent *event);
+	void handle_mouse_press_event(QMouseEvent *event);
+	void handle_mouse_release_event(QMouseEvent *event);
+	void handle_mouse_move_event(QMouseEvent *event);
+	void handle_key_press_event(QKeyEvent *event);
+	void handle_key_release_event(QKeyEvent *event);
+	void handle_leave_event(QEvent *event);
+	void clear_selection_items();
+
+protected:
+	QWidget &widget_;
+	pv::views::trace::View &view_;
+	QPoint mouse_point_;
+	QPoint mouse_down_point_;
+	pv::util::Timestamp mouse_down_offset_;
+	shared_ptr<ViewItem> mouse_down_item_;
+	Qt::KeyboardModifiers mouse_modifiers_;
+	bool item_dragging_;
+};
+
+class ViewWidget : public QWidget, protected ViewWidgetBase
 {
 	Q_OBJECT
 
 protected:
 	ViewWidget(View &parent);
-
-	/**
-	 * Indicates when a view item is being hovered over.
-	 * @param item The item that is being hovered over, or @c nullptr
-	 * if no view item is being hovered over.
-	 * @remarks the default implementation does nothing.
-	 */
-	virtual void item_hover(const shared_ptr<ViewItem> &item, QPoint pos);
-
-	/**
-	 * Indicates the event an a view item has been clicked.
-	 * @param item the view item that has been clicked.
-	 * @remarks the default implementation does nothing.
-	 */
-	virtual void item_clicked(const shared_ptr<ViewItem> &item);
-
-	/**
-	 * Returns true if the selection of row items allows dragging.
-	 * @return Returns true if the drag is acceptable.
-	 */
-	bool accept_drag() const;
-
-	/**
-	 * Returns true if the mouse button is down.
-	 */
-	bool mouse_down() const;
-
-	/**
-	 * Drag the dragging items by the delta offset.
-	 * @param delta the drag offset in pixels.
-	 */
-	void drag_items(const QPoint &delta);
-
-	/**
-	 * Sets this item into the dragged state.
-	 */
-	virtual void drag();
-
-	/**
-	 * Drag the background by the delta offset.
-	 * @param delta the drag offset in pixels.
-	 * @remarks The default implementation does nothing.
-	 */
-	virtual void drag_by(const QPoint &delta);
-
-	/**
-	 * Sets this item into the un-dragged state.
-	 */
-	virtual void drag_release();
-
-	/**
-	 * Gets the items in the view widget.
-	 */
-	virtual vector< shared_ptr<ViewItem> > items() = 0;
-
-	/**
-	 * Gets the first view item which has a hit-box that contains @c pt .
-	 * @param pt the point to search with.
-	 * @return the view item that has been found, or and empty
-	 *   @c shared_ptr if no item was found.
-	 */
-	virtual shared_ptr<ViewItem> get_mouse_over_item(const QPoint &pt) = 0;
-
-	/**
-	 * Handles left mouse button press events.
-	 * @param event the mouse event that triggered this handler.
-	 */
-	void mouse_left_press_event(QMouseEvent *event);
-
-	/**
-	 * Handles left mouse button release events.
-	 * @param event the mouse event that triggered this handler.
-	 */
-	void mouse_left_release_event(QMouseEvent *event);
-
-	/**
-	 * Handles touch begin update and end events.
-	 * @param e the event that triggered this handler.
-	 */
-	virtual bool touch_event(QTouchEvent *event);
+	void selection_changed_event() override;
 
 protected:
 	bool event(QEvent *event);
@@ -144,17 +110,6 @@ public Q_SLOTS:
 Q_SIGNALS:
 	void selection_changed();
 
-protected:
-	pv::views::trace::View &view_;
-	QPoint mouse_point_;
-	QPoint mouse_down_point_;
-	pv::util::Timestamp mouse_down_offset_;
-	shared_ptr<ViewItem> mouse_down_item_;
-
-	/// Keyboard modifiers that were active when mouse was last moved or clicked
-	Qt::KeyboardModifiers mouse_modifiers_;
-
-	bool item_dragging_;
 };
 
 } // namespace trace

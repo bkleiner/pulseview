@@ -49,10 +49,15 @@ namespace views {
 namespace trace {
 
 Viewport::Viewport(View &parent) :
-	ViewWidget(parent),
+	QOpenGLWidget(&parent),
+	ViewWidgetBase(parent, *this),
 	pinch_zoom_active_(false)
 {
-	setAutoFillBackground(true);
+	QSurfaceFormat surface_format = format();
+	surface_format.setSamples(4);
+	setFormat(surface_format);
+
+	setAutoFillBackground(false);
 	setBackgroundRole(QPalette::Base);
 
 	// Set up settings and event handlers
@@ -65,6 +70,45 @@ Viewport::Viewport(View &parent) :
 Viewport::~Viewport()
 {
 	GlobalSettings::remove_change_handler(this);
+}
+
+void Viewport::selection_changed_event()
+{
+}
+
+bool Viewport::event(QEvent *event)
+{
+	return handle_event(event) ? true : QOpenGLWidget::event(event);
+}
+
+void Viewport::mousePressEvent(QMouseEvent *event)
+{
+	handle_mouse_press_event(event);
+}
+
+void Viewport::mouseReleaseEvent(QMouseEvent *event)
+{
+	handle_mouse_release_event(event);
+}
+
+void Viewport::mouseMoveEvent(QMouseEvent *event)
+{
+	handle_mouse_move_event(event);
+}
+
+void Viewport::keyPressEvent(QKeyEvent *event)
+{
+	handle_key_press_event(event);
+}
+
+void Viewport::keyReleaseEvent(QKeyEvent *event)
+{
+	handle_key_release_event(event);
+}
+
+void Viewport::leaveEvent(QEvent *event)
+{
+	handle_leave_event(event);
 }
 
 shared_ptr<ViewItem> Viewport::get_mouse_over_item(const QPoint &pt)
@@ -191,6 +235,7 @@ void Viewport::paintEvent(QPaintEvent*)
 		[](const shared_ptr<TimeItem> &t) { return !t; }));
 
 	QPainter p(this);
+	p.fillRect(rect(), palette().brush(QPalette::Base));
 
 	// Disable antialiasing for high-DPI displays
 	bool use_antialiasing =

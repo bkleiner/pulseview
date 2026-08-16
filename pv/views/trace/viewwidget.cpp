@@ -33,35 +33,35 @@ namespace pv {
 namespace views {
 namespace trace {
 
-ViewWidget::ViewWidget(View &parent) :
-	QWidget(&parent),
+ViewWidgetBase::ViewWidgetBase(View &parent, QWidget &widget) :
+	widget_(widget),
 	view_(parent),
 	item_dragging_(false)
 {
-	setFocusPolicy(Qt::ClickFocus);
-	setAttribute(Qt::WA_AcceptTouchEvents, true);
-	setMouseTracking(true);
+	widget_.setFocusPolicy(Qt::ClickFocus);
+	widget_.setAttribute(Qt::WA_AcceptTouchEvents, true);
+	widget_.setMouseTracking(true);
 }
 
-void ViewWidget::clear_selection()
+void ViewWidgetBase::clear_selection_items()
 {
 	const auto items = this->items();
 	for (auto &i : items)
 		i->select(false);
 }
 
-void ViewWidget::item_hover(const shared_ptr<ViewItem> &item, QPoint pos)
+void ViewWidgetBase::item_hover(const shared_ptr<ViewItem> &item, QPoint pos)
 {
 	(void)item;
 	(void)pos;
 }
 
-void ViewWidget::item_clicked(const shared_ptr<ViewItem> &item)
+void ViewWidgetBase::item_clicked(const shared_ptr<ViewItem> &item)
 {
 	(void)item;
 }
 
-bool ViewWidget::accept_drag() const
+bool ViewWidgetBase::accept_drag() const
 {
 	const vector< shared_ptr<TimeItem> > items(view_.time_items());
 	const vector< shared_ptr<TraceTreeItem> > trace_tree_items(
@@ -94,13 +94,13 @@ bool ViewWidget::accept_drag() const
 	return true;
 }
 
-bool ViewWidget::mouse_down() const
+bool ViewWidgetBase::mouse_down() const
 {
 	return mouse_down_point_.x() != INT_MIN &&
 		mouse_down_point_.y() != INT_MIN;
 }
 
-void ViewWidget::drag_items(const QPoint &delta)
+void ViewWidgetBase::drag_items(const QPoint &delta)
 {
 	bool item_dragged = false;
 
@@ -144,20 +144,20 @@ void ViewWidget::drag_items(const QPoint &delta)
 		drag_by(delta);
 }
 
-void ViewWidget::drag()
+void ViewWidgetBase::drag()
 {
 }
 
-void ViewWidget::drag_by(const QPoint &delta)
+void ViewWidgetBase::drag_by(const QPoint &delta)
 {
 	(void)delta;
 }
 
-void ViewWidget::drag_release()
+void ViewWidgetBase::drag_release()
 {
 }
 
-void ViewWidget::mouse_left_press_event(QMouseEvent *event)
+void ViewWidgetBase::mouse_left_press_event(QMouseEvent *event)
 {
 	(void)event;
 
@@ -167,7 +167,7 @@ void ViewWidget::mouse_left_press_event(QMouseEvent *event)
 	// Clear selection if control is not pressed and this item is unselected
 	if ((!mouse_down_item_ || !mouse_down_item_->selected()) &&
 		!ctrl_pressed)
-		clear_selection();
+		clear_selection_items();
 
 	// Set the signal selection state if the item has been clicked
 	if (mouse_down_item_ && mouse_down_item_->is_selectable(event->pos())) {
@@ -190,10 +190,10 @@ void ViewWidget::mouse_left_press_event(QMouseEvent *event)
 	if (!item_dragged)
 		drag();
 
-	selection_changed();
+	selection_changed_event();
 }
 
-void ViewWidget::mouse_left_release_event(QMouseEvent *event)
+void ViewWidgetBase::mouse_left_release_event(QMouseEvent *event)
 {
 	assert(event);
 
@@ -224,14 +224,14 @@ void ViewWidget::mouse_left_release_event(QMouseEvent *event)
 	item_dragging_ = false;
 }
 
-bool ViewWidget::touch_event(QTouchEvent *event)
+bool ViewWidgetBase::touch_event(QTouchEvent *event)
 {
 	(void)event;
 
 	return false;
 }
 
-bool ViewWidget::event(QEvent *event)
+bool ViewWidgetBase::handle_event(QEvent *event)
 {
 	switch (event->type()) {
 	case QEvent::TouchBegin:
@@ -245,10 +245,10 @@ bool ViewWidget::event(QEvent *event)
 		break;
 	}
 
-	return QWidget::event(event);
+	return false;
 }
 
-void ViewWidget::mousePressEvent(QMouseEvent *event)
+void ViewWidgetBase::handle_mouse_press_event(QMouseEvent *event)
 {
 	assert(event);
 
@@ -273,7 +273,7 @@ void ViewWidget::mousePressEvent(QMouseEvent *event)
 		mouse_down_point_ = event->pos();
 }
 
-void ViewWidget::mouseReleaseEvent(QMouseEvent *event)
+void ViewWidgetBase::handle_mouse_release_event(QMouseEvent *event)
 {
 	assert(event);
 
@@ -284,23 +284,23 @@ void ViewWidget::mouseReleaseEvent(QMouseEvent *event)
 	mouse_down_item_ = nullptr;
 }
 
-void ViewWidget::keyReleaseEvent(QKeyEvent *event)
+void ViewWidgetBase::handle_key_release_event(QKeyEvent *event)
 {
 	// Update mouse_modifiers_ also if modifiers change, but pointer doesn't move
 	if ((mouse_point_.x() >= 0) && (mouse_point_.y() >= 0)) // mouse is inside
 		mouse_modifiers_ = event->modifiers();
-	update();
+	widget_.update();
 }
 
-void ViewWidget::keyPressEvent(QKeyEvent *event)
+void ViewWidgetBase::handle_key_press_event(QKeyEvent *event)
 {
 	// Update mouse_modifiers_ also if modifiers change, but pointer doesn't move
 	if ((mouse_point_.x() >= 0) && (mouse_point_.y() >= 0)) // mouse is inside
 		mouse_modifiers_ = event->modifiers();
-	update();
+	widget_.update();
 }
 
-void ViewWidget::mouseMoveEvent(QMouseEvent *event)
+void ViewWidgetBase::handle_mouse_move_event(QMouseEvent *event)
 {
 	assert(event);
 	mouse_point_ = event->pos();
@@ -341,12 +341,13 @@ void ViewWidget::mouseMoveEvent(QMouseEvent *event)
 	}
 
 	// Force a repaint of the widget to update highlighted parts
-	update();
+	widget_.update();
 }
 
-void ViewWidget::leaveEvent(QEvent*)
+void ViewWidgetBase::handle_leave_event(QEvent*)
 {
-	bool cursor_above_widget = rect().contains(mapFromGlobal(QCursor::pos()));
+	bool cursor_above_widget = widget_.rect().contains(
+		widget_.mapFromGlobal(QCursor::pos()));
 
 	// We receive leaveEvent also when the widget loses focus even when
 	// the mouse cursor hasn't moved at all - e.g. when the popup shows.
@@ -358,7 +359,58 @@ void ViewWidget::leaveEvent(QEvent*)
 	mouse_modifiers_ = Qt::NoModifier;
 	item_hover(nullptr, QPoint());
 
-	update();
+	widget_.update();
+}
+
+ViewWidget::ViewWidget(View &parent) :
+	QWidget(&parent),
+	ViewWidgetBase(parent, *this)
+{
+}
+
+void ViewWidget::selection_changed_event()
+{
+	Q_EMIT selection_changed();
+}
+
+void ViewWidget::clear_selection()
+{
+	clear_selection_items();
+}
+
+bool ViewWidget::event(QEvent *event)
+{
+	return handle_event(event) ? true : QWidget::event(event);
+}
+
+void ViewWidget::mousePressEvent(QMouseEvent *event)
+{
+	handle_mouse_press_event(event);
+}
+
+void ViewWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+	handle_mouse_release_event(event);
+}
+
+void ViewWidget::mouseMoveEvent(QMouseEvent *event)
+{
+	handle_mouse_move_event(event);
+}
+
+void ViewWidget::keyPressEvent(QKeyEvent *event)
+{
+	handle_key_press_event(event);
+}
+
+void ViewWidget::keyReleaseEvent(QKeyEvent *event)
+{
+	handle_key_release_event(event);
+}
+
+void ViewWidget::leaveEvent(QEvent *event)
+{
+	handle_leave_event(event);
 }
 
 } // namespace trace
