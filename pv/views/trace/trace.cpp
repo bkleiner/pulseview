@@ -298,6 +298,12 @@ void Trace::hover_point_changed(const QPoint &hp)
 		owner_->row_item_appearance_changed(false, true);
 }
 
+void Trace::save_trace_tree(QSettings &settings) const
+{
+	TraceTreeItem::save_trace_tree(settings);
+	settings.setValue("trace", base_->internal_name());
+}
+
 void Trace::paint_back(QPainter &p, ViewItemPaintParams &pp)
 {
 	const View *view = owner_->view();

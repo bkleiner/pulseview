@@ -651,11 +651,17 @@ vector<data::LogicSegment::EdgePair> AnalogSignal::get_nearest_level_changes(uin
 	const View *view = owner_->view();
 	assert(view);
 	const double samples_per_pixel = base_->get_samplerate() * view->scale();
+	const double radius = max(1.0,
+		view->snap_distance() * samples_per_pixel);
+	const uint64_t search_radius = radius >=
+		std::numeric_limits<uint64_t>::max() ?
+		std::numeric_limits<uint64_t>::max() :
+		(uint64_t)ceil(radius);
 
 	vector<LogicSegment::EdgePair> edges;
 
 	segment->get_surrounding_edges(edges, sample_pos,
-		samples_per_pixel / LogicSignal::Oversampling, 0);
+		samples_per_pixel / LogicSignal::Oversampling, 0, search_radius);
 
 	if (edges.empty())
 		return vector<LogicSegment::EdgePair>();

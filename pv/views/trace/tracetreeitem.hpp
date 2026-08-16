@@ -20,9 +20,11 @@
 #ifndef PULSEVIEW_PV_VIEWS_TRACE_TRACETREEITEM_HPP
 #define PULSEVIEW_PV_VIEWS_TRACE_TRACETREEITEM_HPP
 
+#include <map>
 #include <memory>
 
 #include <QPropertyAnimation>
+#include <QSettings>
 
 #include "viewitem.hpp"
 
@@ -118,6 +120,10 @@ public:
 	 * @return A pair containing the minimum and maximum y-values.
 	 */
 	virtual pair<int, int> v_extents() const = 0;
+
+	virtual void save_trace_tree(QSettings &settings) const;
+	virtual void restore_trace_tree(QSettings &settings,
+		std::map<QString, std::shared_ptr<TraceTreeItem>> &items);
 
 protected:
 	TraceTreeItemOwner *owner_;

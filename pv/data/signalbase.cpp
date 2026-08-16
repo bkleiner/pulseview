@@ -129,7 +129,9 @@ SignalBase::SignalBase(shared_ptr<sigrok::Channel> channel, ChannelType channel_
 	error_message_("")
 {
 	if (channel_) {
-		set_internal_name(QString::fromStdString(channel_->name()));
+		const QString channel_name = QString::fromStdString(channel_->name());
+		set_internal_name(channel_name);
+		name_ = channel_name;
 		set_index(channel_->index());
 	} else {
 		set_internal_name(QUuid::createUuid().toString().remove('{').remove('}'));
@@ -212,7 +214,7 @@ SignalGroup* SignalBase::group() const
 
 QString SignalBase::name() const
 {
-	return (channel_) ? QString::fromStdString(channel_->name()) : name_;
+	return name_;
 }
 
 QString SignalBase::internal_name() const
@@ -238,9 +240,6 @@ QString SignalBase::display_name() const
 
 void SignalBase::set_name(QString name)
 {
-	if (channel_)
-		channel_->set_name(name.toUtf8().constData());
-
 	name_ = name;
 
 	name_changed(name);

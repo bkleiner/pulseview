@@ -172,6 +172,19 @@ void TraceGroup::ungroup()
 	owner_->remove_child_item(shared_from_this());
 }
 
+void TraceGroup::save_trace_tree(QSettings &settings) const
+{
+	TraceTreeItem::save_trace_tree(settings);
+	TraceTreeItemOwner::save_trace_tree(settings);
+}
+
+void TraceGroup::restore_trace_tree(QSettings &settings,
+	std::map<QString, shared_ptr<TraceTreeItem>> &items)
+{
+	TraceTreeItem::restore_trace_tree(settings, items);
+	TraceTreeItemOwner::restore_trace_tree(settings, items);
+}
+
 void TraceGroup::on_ungroup()
 {
 	ungroup();

@@ -118,6 +118,10 @@ public:
 
 	void ungroup();
 
+	virtual void save_trace_tree(QSettings &settings) const;
+	virtual void restore_trace_tree(QSettings &settings,
+		std::map<QString, shared_ptr<TraceTreeItem>> &items);
+
 public:
 	void row_item_appearance_changed(bool label, bool content);
 

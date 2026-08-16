@@ -21,10 +21,12 @@
 
 #include "tracetreeitem.hpp"
 #include "trace.hpp"
+#include "tracegroup.hpp"
 #include "tracetreeitemowner.hpp"
 
 using std::find;
 using std::make_pair;
+using std::make_shared;
 using std::max;
 using std::min;
 using std::pair;
@@ -53,6 +55,27 @@ TraceTreeItemOwner::trace_tree_child_items() const
 	}
 
 	return items;
+}
+
+vector< shared_ptr<TraceTreeItem> >
+TraceTreeItemOwner::trace_tree_leaf_items() const
+{
+	vector< shared_ptr<TraceTreeItem> > leaves;
+
+	for (const shared_ptr<TraceTreeItem> &item : trace_tree_child_items()) {
+		shared_ptr<TraceTreeItemOwner> branch =
+			dynamic_pointer_cast<TraceTreeItemOwner>(item);
+		if (branch) {
+			const vector< shared_ptr<TraceTreeItem> > branch_leaves =
+				branch->trace_tree_leaf_items();
+			leaves.insert(leaves.end(), branch_leaves.begin(),
+				branch_leaves.end());
+		} else {
+			leaves.push_back(item);
+		}
+	}
+
+	return leaves;
 }
 
 void TraceTreeItemOwner::clear_child_items()
@@ -108,6 +131,45 @@ pair<int, int> TraceTreeItemOwner::v_extents() const
 		extents = make_pair(0, 0);
 
 	return extents;
+}
+
+void TraceTreeItemOwner::save_trace_tree(QSettings &settings) const
+{
+	int index = 0;
+	for (const shared_ptr<TraceTreeItem> &child : trace_tree_child_items()) {
+		settings.beginGroup(QString::number(index++));
+		child->save_trace_tree(settings);
+		settings.endGroup();
+	}
+	settings.setValue("items", index);
+}
+
+void TraceTreeItemOwner::restore_trace_tree(QSettings &settings,
+	std::map<QString, shared_ptr<TraceTreeItem>> &items)
+{
+	const int count = min(max(settings.value("items", 0).toInt(), 0),
+		(int)settings.childGroups().size());
+
+	for (int index = 0; index < count; index++) {
+		settings.beginGroup(QString::number(index));
+		if (settings.contains("items")) {
+			shared_ptr<TraceGroup> group = make_shared<TraceGroup>();
+			group->restore_trace_tree(settings, items);
+			if (!group->child_items().empty())
+				add_child_item(group);
+		} else if (settings.contains("trace")) {
+			const QString name = settings.value("trace").toString();
+			auto item = items.find(name);
+			if (item != items.end()) {
+				add_child_item(item->second);
+				item->second->restore_trace_tree(settings, items);
+				items.erase(item);
+			}
+		}
+		settings.endGroup();
+	}
+
+	restack_items();
 }
 
 void TraceTreeItemOwner::restack_items()

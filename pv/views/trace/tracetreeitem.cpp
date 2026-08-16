@@ -138,6 +138,20 @@ QPoint TraceTreeItem::drag_point(const QRect &rect) const
 	return QPoint(rect.right(), get_visual_y());
 }
 
+void TraceTreeItem::save_trace_tree(QSettings &settings) const
+{
+	settings.setValue("v_offset", layout_v_offset());
+}
+
+void TraceTreeItem::restore_trace_tree(QSettings &settings,
+	std::map<QString, shared_ptr<TraceTreeItem>> &items)
+{
+	(void)items;
+
+	if (settings.contains("v_offset"))
+		force_to_v_offset(settings.value("v_offset").toInt());
+}
+
 } // namespace trace
 } // namespace views
 } // namespace pv

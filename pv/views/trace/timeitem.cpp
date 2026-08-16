@@ -17,9 +17,13 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cmath>
+
 #include "signal.hpp"
 #include "timeitem.hpp"
 #include "view.hpp"
+
+#include <pv/session.hpp>
 
 namespace pv {
 namespace views {
@@ -37,10 +41,19 @@ void TimeItem::drag_by(const QPoint &delta)
 	} else {
 		int64_t sample_num = view_.get_nearest_level_change(drag_point_ + delta);
 
-		if (sample_num > -1)
+		if (sample_num > -1) {
 			set_time(sample_num / view_.get_signal_under_mouse_cursor()->base()->get_samplerate());
-		else
-			set_time(view_.offset() + (drag_point_.x() + delta.x() - 0.5) * view_.scale());
+		} else {
+			const pv::util::Timestamp time = view_.offset() +
+				(drag_point_.x() + delta.x() - 0.5) * view_.scale();
+			const double samplerate = view_.session().get_samplerate();
+			if (samplerate > 0)
+				set_time(pv::util::Timestamp(
+					std::llround(time.convert_to<double>() * samplerate)) /
+					samplerate);
+			else
+				set_time(time);
+		}
 	}
 }
 

@@ -139,6 +139,11 @@ public:
 	shared_ptr<Signal> get_signal_under_mouse_cursor() const;
 
 	/**
+	 * Returns the maximum pixel distance used when snapping to an edge.
+	 */
+	uint16_t snap_distance() const { return snap_distance_; }
+
+	/**
 	 * Returns the view of the owner.
 	 */
 	virtual View* view();

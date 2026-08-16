@@ -162,6 +162,8 @@ public:
 
 	virtual void hover_point_changed(const QPoint &hp);
 
+	virtual void save_trace_tree(QSettings &settings) const;
+
 protected:
 	/**
 	 * Paints the background layer of the signal with a QPainter.

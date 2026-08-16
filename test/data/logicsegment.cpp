@@ -19,23 +19,52 @@
 
 #include <extdef.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
+#include <pv/data/logic.hpp>
 #include <pv/data/logicsegment.hpp>
 
-#if 0
+using pv::data::Logic;
 using pv::data::LogicSegment;
+using std::make_shared;
+using std::shared_ptr;
 using std::vector;
-#endif
 
-// Dummy, remove again when unit tests are fixed.
-BOOST_AUTO_TEST_SUITE(DummyTestSuite)
-BOOST_AUTO_TEST_CASE(DummyTestCase)
+BOOST_AUTO_TEST_SUITE(LogicSegmentSearchTest)
+
+BOOST_AUTO_TEST_CASE(SurroundingEdgesRespectSearchRadius)
 {
-	BOOST_CHECK_EQUAL(1, 1);
+	Logic logic(1);
+	shared_ptr<LogicSegment> segment =
+		make_shared<LogicSegment>(logic, 0, 1, 1);
+	logic.push_segment(segment);
+
+	vector<uint8_t> samples(100, 0);
+	std::fill(samples.begin() + 20, samples.begin() + 80, 1);
+	segment->append_payload(samples.data(), samples.size());
+
+	vector<LogicSegment::EdgePair> edges;
+	segment->get_surrounding_edges(edges, 50, 1, 0);
+	BOOST_REQUIRE_EQUAL(edges.size(), 2);
+	BOOST_CHECK_EQUAL(edges.front().first, 20);
+	BOOST_CHECK_EQUAL(edges.back().first, 80);
+
+	edges.clear();
+	segment->get_surrounding_edges(edges, 50, 1, 0, 10);
+	BOOST_CHECK(edges.empty());
+
+	edges.clear();
+	segment->get_surrounding_edges(edges, 50, 1, 0, 35);
+	BOOST_REQUIRE_EQUAL(edges.size(), 2);
+	BOOST_CHECK_EQUAL(edges.front().first, 20);
+	BOOST_CHECK_EQUAL(edges.back().first, 80);
 }
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0

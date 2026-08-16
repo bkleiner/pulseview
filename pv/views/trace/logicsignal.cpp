@@ -21,6 +21,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <limits>
 
 #include <algorithm>
 
@@ -123,11 +124,13 @@ LogicSignal::LogicSignal(pv::Session &session, shared_ptr<data::SignalBase> base
 	/* Populate this channel's trigger setting with whatever we
 	 * find in the current session trigger, if anything. */
 	trigger_match_ = nullptr;
-	if (shared_ptr<Trigger> trigger = session_.session()->trigger())
-		for (auto stage : trigger->stages())
-			for (auto match : stage->matches())
-				if (match->channel() == base_->channel())
-					trigger_match_ = match->type();
+	if (session_.session()) {
+		if (shared_ptr<Trigger> trigger = session_.session()->trigger())
+			for (auto stage : trigger->stages())
+				for (auto match : stage->matches())
+					if (match->channel() == base_->channel())
+						trigger_match_ = match->type();
+	}
 }
 
 std::map<QString, QVariant> LogicSignal::save_settings() const
@@ -212,8 +215,9 @@ void LogicSignal::paint_mid(QPainter &p, ViewItemPaintParams &pp)
 				pixels_offset) * samples_per_pixel);
 		if (!((hover_sample >= time_diff_start_sample_) &&
 				(hover_sample <= time_diff_end_sample_))) {
-			const vector<LogicSegment::EdgePair> edges = 
-				get_nearest_level_changes(hover_sample);
+			vector<LogicSegment::EdgePair> edges;
+			segment->get_surrounding_edges(edges, hover_sample,
+				samples_per_pixel / Oversampling, base_->index());
 			if ((edges.size() == 2) && (edges[0].second != edges[1].second)) {
 				time_diff_start_sample_ = edges[0].first;
 				time_diff_end_sample_ = edges[1].first;
@@ -673,11 +677,17 @@ vector<LogicSegment::EdgePair> LogicSignal::get_nearest_level_changes(uint64_t s
 	const View *view = owner_->view();
 	assert(view);
 	const double samples_per_pixel = base_->get_samplerate() * view->scale();
+	const double radius = max(1.0,
+		view->snap_distance() * samples_per_pixel);
+	const uint64_t search_radius = radius >=
+		std::numeric_limits<uint64_t>::max() ?
+		std::numeric_limits<uint64_t>::max() :
+		(uint64_t)ceil(radius);
 
 	vector<LogicSegment::EdgePair> edges;
 
 	segment->get_surrounding_edges(edges, sample_pos,
-		samples_per_pixel / Oversampling, base_->index());
+		samples_per_pixel / Oversampling, base_->index(), search_radius);
 
 	if (edges.empty())
 		return vector<LogicSegment::EdgePair>();

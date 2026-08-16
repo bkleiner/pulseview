@@ -574,22 +574,30 @@ void LogicSegment::get_subsampled_edges(
 }
 
 void LogicSegment::get_surrounding_edges(vector<EdgePair> &dest,
-	uint64_t origin_sample, float min_length, int sig_index)
+	uint64_t origin_sample, float min_length, int sig_index,
+	uint64_t search_radius)
 {
-	if (origin_sample >= sample_count_)
+	const uint64_t sample_count = sample_count_.load();
+	if (origin_sample >= sample_count)
 		return;
 
 	vector<EdgePair> edges;
 
 	// Search backwards from origin_sample using progressively larger windows
-	// to find the nearest edge to the left, avoiding a full scan from sample 0
+	// to find the nearest edge to the left. A non-zero search radius bounds the
+	// work to the range in which the caller could actually snap to an edge.
 	EdgePair left_edge;
 	bool found_left = false;
+	const uint64_t left_limit = search_radius && origin_sample > search_radius ?
+		origin_sample - search_radius : 0;
 	uint64_t search_start = origin_sample;
-	uint64_t window = max((uint64_t)min_length, (uint64_t)1024);
+	uint64_t window = max((uint64_t)ceilf(min_length), (uint64_t)1024);
+	if (search_radius)
+		window = min(window, search_radius);
 
-	while (search_start > 0) {
-		uint64_t start = (search_start > window) ? search_start - window : 0;
+	while (search_start > left_limit) {
+		const uint64_t remaining = search_start - left_limit;
+		const uint64_t start = search_start - min(window, remaining);
 		edges.clear();
 		get_subsampled_edges(edges, start, search_start, min_length, sig_index, false);
 
@@ -602,22 +610,25 @@ void LogicSegment::get_surrounding_edges(vector<EdgePair> &dest,
 		}
 
 		search_start = start;
-		window *= 4;
+		if (window > UINT64_MAX / 4)
+			window = UINT64_MAX;
+		else
+			window *= 4;
 	}
 
-	if (!found_left)
-		return;
-
-	dest.push_back(left_edge);
+	if (found_left)
+		dest.push_back(left_edge);
 
 	// Get first edge to the right of origin_sample
 	edges.clear();
-	get_subsampled_edges(edges, origin_sample, sample_count_, min_length, sig_index, true);
+	const uint64_t right_end = search_radius &&
+		search_radius < sample_count - origin_sample ?
+		origin_sample + search_radius : sample_count;
+	get_subsampled_edges(edges, origin_sample, right_end,
+		min_length, sig_index, true);
 
-	if (edges.size() == 0)
-		return;
-
-	dest.push_back(edges.front());
+	if (!edges.empty())
+		dest.push_back(edges.front());
 }
 
 void LogicSegment::reallocate_mipmap_level(MipMapLevel &m)

@@ -514,6 +514,10 @@ void View::save_settings(QSettings &settings) const
 		signal->save_settings(settings);
 		settings.endGroup();
 	}
+
+	settings.beginGroup("trace_tree");
+	save_trace_tree(settings);
+	settings.endGroup();
 }
 
 void View::restore_settings(QSettings &settings)
@@ -555,6 +559,31 @@ void View::restore_settings(QSettings &settings)
 
 	// Update the ruler so that it uses the new scale
 	calculate_tick_spacing();
+
+	// Restore grouping and ordering after all traces have been recreated.
+	if (settings.childGroups().contains("trace_tree")) {
+		settings.beginGroup("trace_tree");
+		if (settings.contains("items")) {
+			const vector< shared_ptr<TraceTreeItem> > leaves =
+				trace_tree_leaf_items();
+			std::map<QString, shared_ptr<TraceTreeItem>> traces;
+			for (const shared_ptr<TraceTreeItem> &item : leaves) {
+				shared_ptr<Trace> trace = dynamic_pointer_cast<Trace>(item);
+				if (trace)
+					traces[trace->base()->internal_name()] = trace;
+			}
+
+			clear_child_items();
+			restore_trace_tree(settings, traces);
+
+			// Keep newly available traces that were absent from the saved file.
+			for (const shared_ptr<TraceTreeItem> &item : leaves)
+				if (!item->owner())
+					add_child_item(item);
+			restack_items();
+		}
+		settings.endGroup();
+	}
 }
 
 vector< shared_ptr<TimeItem> > View::time_items() const
@@ -1544,7 +1573,15 @@ bool View::eventFilter(QObject *object, QEvent *event)
 			pv::util::Timestamp mouse_time = offset_ + hover_point_.x() * scale_;
 
 			if (nearest == -1) {
-				grabbed_widget_->set_time(mouse_time);
+				const double samplerate = session().get_samplerate();
+				if (samplerate > 0) {
+					const int64_t sample_num = std::llround(
+						mouse_time.convert_to<double>() * samplerate);
+					grabbed_widget_->set_time(
+						pv::util::Timestamp(sample_num) / samplerate);
+				} else {
+					grabbed_widget_->set_time(mouse_time);
+				}
 			} else {
 				grabbed_widget_->set_time(nearest / get_signal_under_mouse_cursor()->base()->get_samplerate());
 			}

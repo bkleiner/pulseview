@@ -20,6 +20,8 @@
 #ifndef PULSEVIEW_PV_VIEWS_TRACE_TRACETREEITEMOWNER_HPP
 #define PULSEVIEW_PV_VIEWS_TRACE_TRACETREEITEMOWNER_HPP
 
+#include <map>
+
 #include "viewitemowner.hpp"
 #include "tracetreeitem.hpp"
 
@@ -78,6 +80,11 @@ public:
 	vector< shared_ptr<TraceTreeItem> > trace_tree_child_items() const;
 
 	/**
+	 * Returns all leaf items owned by this object and nested trace groups.
+	 */
+	vector< shared_ptr<TraceTreeItem> > trace_tree_leaf_items() const;
+
+	/**
 	 * Clears the list of child items.
 	 */
 	void clear_child_items();
@@ -99,6 +106,10 @@ public:
 	 * @return A pair containing the minimum and maximum y-values.
 	 */
 	pair<int, int> v_extents() const;
+
+	virtual void save_trace_tree(QSettings &settings) const;
+	virtual void restore_trace_tree(QSettings &settings,
+		std::map<QString, shared_ptr<TraceTreeItem>> &items);
 
 public:
 	virtual void row_item_appearance_changed(bool label, bool content) = 0;

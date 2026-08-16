@@ -121,8 +121,15 @@ public:
 		uint64_t start, uint64_t end,
 		float min_length, int sig_index, bool first_change_only = false);
 
+	/**
+	 * Gets the nearest edges around a sample position.
+	 *
+	 * When search_radius is non-zero, only transitions inside that many
+	 * samples on either side of origin_sample are considered.
+	 */
 	void get_surrounding_edges(vector<EdgePair> &dest,
-		uint64_t origin_sample, float min_length, int sig_index);
+		uint64_t origin_sample, float min_length, int sig_index,
+		uint64_t search_radius = 0);
 
 	TimeMeasureState get_time_measure_state() const;
 	void set_time_measure_start_sample(TimeMeasureSamplePair sample);
