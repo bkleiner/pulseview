@@ -189,6 +189,7 @@ if(ENABLE_DECODE)
 		${PROJECT_SOURCE_DIR}/pv/widgets/decodergroupbox.cpp
 		${PROJECT_SOURCE_DIR}/pv/widgets/decodermenu.cpp
 		data/rowdata.cpp
+		views/tabular_decoder.cpp
 	)
 
 	list(APPEND pulseview_TEST_HEADERS

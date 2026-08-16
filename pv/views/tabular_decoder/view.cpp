@@ -27,6 +27,9 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QSignalBlocker>
+#include <QShortcut>
 #include <QToolBar>
 #include <QVBoxLayout>
 
@@ -52,6 +55,38 @@ namespace pv {
 namespace views {
 namespace tabular_decoder {
 
+namespace {
+
+class MultiSelectMenu : public QMenu
+{
+public:
+	using QMenu::QMenu;
+
+protected:
+	void mouseReleaseEvent(QMouseEvent *event) override
+	{
+		QAction *const action = actionAt(event->position().toPoint());
+		if (action && action->isEnabled() && action->isCheckable()) {
+			action->setChecked(!action->isChecked());
+			return;
+		}
+
+		QMenu::mouseReleaseEvent(event);
+	}
+};
+
+QString filter_button_text(const QString &label, qsizetype selected,
+	qsizetype available)
+{
+	if (selected == available)
+		return label + QStringLiteral(": ") + QObject::tr("All");
+	if (selected == 0)
+		return label + QStringLiteral(": ") + QObject::tr("None");
+	return QStringLiteral("%1: %2/%3").arg(label).arg(selected).arg(available);
+}
+
+} // namespace
+
 const char* SaveTypeNames[SaveTypeCount] = {
 	"CSV, commas escaped",
 	"CSV, fields quoted"
@@ -66,26 +101,30 @@ const char* ViewModeNames[ViewModeCount] = {
 
 CustomFilterProxyModel::CustomFilterProxyModel(QObject* parent) :
 	QSortFilterProxyModel(parent),
-	range_filtering_enabled_(false)
+	range_filtering_enabled_(false),
+	group_filtering_enabled_(false),
+	type_filtering_enabled_(false)
 {
 }
 
 bool CustomFilterProxyModel::filterAcceptsRow(int sourceRow,
 	const QModelIndex &sourceParent) const
 {
-	(void)sourceParent;
 	assert(sourceModel() != nullptr);
+	const AnnotationCollectionModel *const annotation_model =
+		qobject_cast<const AnnotationCollectionModel*>(sourceModel());
+	const QModelIndex source_index = sourceModel()->index(sourceRow, 0, sourceParent);
+	const Annotation *const ann = annotation_model ?
+		static_cast<const Annotation*>(source_index.internalPointer()) : nullptr;
 
 	bool result = true;
 
 	if (range_filtering_enabled_) {
-		const QModelIndex ann_start_sample_idx = sourceModel()->index(sourceRow, 0);
-		const uint64_t ann_start_sample =
-			sourceModel()->data(ann_start_sample_idx, Qt::DisplayRole).toULongLong();
-
-		const QModelIndex ann_end_sample_idx = sourceModel()->index(sourceRow, 6);
-		const uint64_t ann_end_sample =
-			sourceModel()->data(ann_end_sample_idx, Qt::DisplayRole).toULongLong();
+		const uint64_t ann_start_sample = ann ? ann->start_sample() :
+			sourceModel()->data(source_index, Qt::DisplayRole).toULongLong();
+		const uint64_t ann_end_sample = ann ? ann->end_sample() :
+			sourceModel()->data(sourceModel()->index(sourceRow, 6, sourceParent),
+				Qt::DisplayRole).toULongLong();
 
 		// We consider all annotations as visible that either
 		// a) begin to the left of the range and end within the range or
@@ -100,7 +139,32 @@ bool CustomFilterProxyModel::filterAcceptsRow(int sourceRow,
 		result = !entirely_outside_of_range;
 	}
 
-	return result;
+	if (!result)
+		return result;
+
+	if (group_filtering_enabled_) {
+		const quintptr group_id = ann ? reinterpret_cast<quintptr>(ann->row()) :
+			sourceModel()->data(source_index, AnnotationGroupIdRole).toULongLong();
+		if (!group_filter_.contains(group_id))
+			return false;
+	}
+
+	if (type_filtering_enabled_) {
+		const data::decode::AnnotationClass *const ann_class = ann ?
+			ann->row()->decoder()->get_ann_class_by_id(ann->ann_class_id()) : nullptr;
+		const quintptr type_id = ann_class ? reinterpret_cast<quintptr>(ann_class) :
+			sourceModel()->data(source_index, AnnotationTypeIdRole).toULongLong();
+		if (!type_filter_.contains(type_id))
+			return false;
+	}
+
+	if (search_text_.isEmpty())
+		return true;
+
+	const QString value = ann ? ann->longest_annotation() :
+		sourceModel()->data(sourceModel()->index(sourceRow, 5, sourceParent),
+			Qt::DisplayRole).toString();
+	return value.contains(search_text_, Qt::CaseInsensitive);
 }
 
 void CustomFilterProxyModel::set_sample_range(uint64_t start_sample,
@@ -109,6 +173,28 @@ void CustomFilterProxyModel::set_sample_range(uint64_t start_sample,
 	range_start_sample_ = start_sample;
 	range_end_sample_ = end_sample;
 
+	invalidateFilter();
+}
+
+void CustomFilterProxyModel::set_search_text(const QString &text)
+{
+	search_text_ = text;
+	invalidateFilter();
+}
+
+void CustomFilterProxyModel::set_group_filter(const QSet<quintptr> &groups,
+	bool enabled)
+{
+	group_filter_ = groups;
+	group_filtering_enabled_ = enabled;
+	invalidateFilter();
+}
+
+void CustomFilterProxyModel::set_type_filter(const QSet<quintptr> &types,
+	bool enabled)
+{
+	type_filter_ = types;
+	type_filtering_enabled_ = enabled;
 	invalidateFilter();
 }
 
@@ -154,13 +240,18 @@ View::View(Session &session, bool is_main_view, QMainWindow *parent) :
 	// Note: Place defaults in View::reset_view_state(), not here
 	parent_(parent),
 	decoder_selector_(new QComboBox()),
-	hide_hidden_cb_(new QCheckBox()),
 	view_mode_selector_(new QComboBox()),
+	search_edit_(new QLineEdit()),
+	decoder_filter_button_(new QToolButton()),
+	group_filter_button_(new QToolButton()),
+	type_filter_button_(new QToolButton()),
+	decoder_filter_menu_(new MultiSelectMenu(this)),
+	group_filter_menu_(new MultiSelectMenu(this)),
+	type_filter_menu_(new MultiSelectMenu(this)),
 	save_button_(new QToolButton()),
 	save_action_(new QAction(this)),
 	table_view_(new CustomTableView()),
 	model_(new AnnotationCollectionModel(this)),
-	filter_proxy_model_(new CustomFilterProxyModel(this)),
 	signal_(nullptr)
 {
 	QVBoxLayout *root_layout = new QVBoxLayout(this);
@@ -173,21 +264,25 @@ View::View(Session &session, bool is_main_view, QMainWindow *parent) :
 	parent->addToolBar(toolbar);
 
 	// Populate toolbar
-	toolbar->addWidget(new QLabel(tr("Decoder:")));
+	toolbar->addWidget(new QLabel(tr("Signal:")));
 	toolbar->addWidget(decoder_selector_);
 	toolbar->addSeparator();
 	toolbar->addWidget(save_button_);
 	toolbar->addSeparator();
 	toolbar->addWidget(view_mode_selector_);
 	toolbar->addSeparator();
-	toolbar->addWidget(hide_hidden_cb_);
+	toolbar->addWidget(decoder_filter_button_);
+	toolbar->addWidget(group_filter_button_);
+	toolbar->addWidget(type_filter_button_);
+	toolbar->addSeparator();
+	toolbar->addWidget(search_edit_);
 
 	connect(decoder_selector_, SIGNAL(currentIndexChanged(int)),
 		this, SLOT(on_selected_decoder_changed(int)));
 	connect(view_mode_selector_, SIGNAL(currentIndexChanged(int)),
 		this, SLOT(on_view_mode_changed(int)));
-	connect(hide_hidden_cb_, SIGNAL(toggled(bool)),
-		this, SLOT(on_hide_hidden_changed(bool)));
+	connect(search_edit_, &QLineEdit::textChanged,
+		model_, &AnnotationCollectionModel::set_search_text);
 
 	// Configure widgets
 	decoder_selector_->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -195,8 +290,22 @@ View::View(Session &session, bool is_main_view, QMainWindow *parent) :
 	for (int i = 0; i < ViewModeCount; i++)
 		view_mode_selector_->addItem(ViewModeNames[i], QVariant::fromValue(i));
 
-	hide_hidden_cb_->setText(tr("Hide Hidden Rows/Classes"));
-	hide_hidden_cb_->setChecked(true);
+	search_edit_->setClearButtonEnabled(true);
+	search_edit_->setPlaceholderText(tr("Search values..."));
+	search_edit_->setToolTip(tr("Search annotation values (Ctrl+F)"));
+	search_edit_->setMinimumWidth(QFontMetrics(search_edit_->font())
+		.horizontalAdvance(search_edit_->placeholderText()) * 2);
+
+	decoder_filter_button_->setMenu(decoder_filter_menu_);
+	decoder_filter_button_->setPopupMode(QToolButton::InstantPopup);
+	group_filter_button_->setMenu(group_filter_menu_);
+	group_filter_button_->setPopupMode(QToolButton::InstantPopup);
+	type_filter_button_->setMenu(type_filter_menu_);
+	type_filter_button_->setPopupMode(QToolButton::InstantPopup);
+
+	QShortcut *find_shortcut = new QShortcut(QKeySequence::Find, this);
+	connect(find_shortcut, &QShortcut::activated, search_edit_,
+		qOverload<>(&QLineEdit::setFocus));
 
 	// Configure actions
 	save_action_->setText(tr("&Save..."));
@@ -220,13 +329,15 @@ View::View(Session &session, bool is_main_view, QMainWindow *parent) :
 	save_button_->setPopupMode(QToolButton::MenuButtonPopup);
 
 	// Set up the models and the table view
-	filter_proxy_model_->setSourceModel(model_);
-	table_view_->setModel(filter_proxy_model_);
+	table_view_->setModel(model_);
+	model_->set_hide_hidden(true);
 
 	table_view_->setSelectionBehavior(QAbstractItemView::SelectRows);
 	table_view_->setSelectionMode(QAbstractItemView::ContiguousSelection);
-	table_view_->setSortingEnabled(true);
-	table_view_->sortByColumn(0, Qt::AscendingOrder);
+	// Decoder annotations already arrive in chronological order. Sorting the
+	// potentially millions of low-level annotations makes every filter change
+	// rebuild an N log N proxy mapping and can stall the UI for minutes.
+	table_view_->setSortingEnabled(false);
 
 	for (uint8_t i = model_->first_hidden_column(); i < model_->columnCount(); i++)
 		table_view_->setColumnHidden(i, true);
@@ -273,6 +384,8 @@ void View::reset_view_state()
 	ViewBase::reset_view_state();
 
 	decoder_selector_->clear();
+	search_edit_->clear();
+	rebuild_annotation_filters();
 }
 
 void View::clear_decode_signals()
@@ -330,7 +443,6 @@ void View::save_settings(QSettings &settings) const
 	ViewBase::save_settings(settings);
 
 	settings.setValue("view_mode", view_mode_selector_->currentIndex());
-	settings.setValue("hide_hidden", hide_hidden_cb_->isChecked());
 }
 
 void View::restore_settings(QSettings &settings)
@@ -339,9 +451,6 @@ void View::restore_settings(QSettings &settings)
 
 	if (settings.contains("view_mode"))
 		view_mode_selector_->setCurrentIndex(settings.value("view_mode").toInt());
-
-	if (settings.contains("hide_hidden"))
-		hide_hidden_cb_->setChecked(settings.value("hide_hidden").toBool());
 }
 
 void View::reset_data()
@@ -353,6 +462,191 @@ void View::reset_data()
 void View::update_data()
 {
 	model_->set_signal_and_segment(signal_, current_segment_);
+}
+
+void View::rebuild_annotation_filters()
+{
+	available_decoders_.clear();
+	available_groups_.clear();
+	available_types_.clear();
+	selected_decoders_.clear();
+	selected_groups_.clear();
+	selected_types_.clear();
+
+	if (signal_) {
+		for (const shared_ptr<Decoder>& decoder : signal_->decoder_stack()) {
+			if (!decoder->visible())
+				continue;
+			const QString decoder_name = QString::fromUtf8(decoder->name());
+			const quintptr decoder_id = reinterpret_cast<quintptr>(decoder.get());
+			available_decoders_.push_back(
+				{decoder_name, decoder_name, decoder_id});
+			selected_decoders_.insert(decoder_id);
+			for (const data::decode::Row *row : decoder->get_rows())
+				if (row->visible()) {
+					const quintptr id = reinterpret_cast<quintptr>(row);
+					available_groups_.push_back({decoder_name, row->description(), id});
+					selected_groups_.insert(id);
+				}
+			for (const data::decode::AnnotationClass *ann_class : decoder->ann_classes())
+				if (ann_class->visible() && ann_class->row->visible()) {
+					const quintptr id = reinterpret_cast<quintptr>(ann_class);
+					available_types_.push_back({decoder_name,
+						QString::fromUtf8(ann_class->description), id});
+					selected_types_.insert(id);
+				}
+		}
+	}
+
+	rebuild_decoder_filter_menu();
+	rebuild_filter_menu(group_filter_menu_, available_groups_, true);
+	rebuild_filter_menu(type_filter_menu_, available_types_, false);
+	apply_decoder_filter();
+	apply_group_filter();
+	apply_type_filter();
+}
+
+void View::rebuild_decoder_filter_menu()
+{
+	decoder_filter_menu_->clear();
+
+	QAction *const select_all = decoder_filter_menu_->addAction(tr("Select all"));
+	QAction *const clear = decoder_filter_menu_->addAction(tr("Clear"));
+	decoder_filter_menu_->addSeparator();
+
+	connect(select_all, &QAction::triggered, this, [this]() {
+		selected_decoders_.clear();
+		for (const FilterItem &item : available_decoders_)
+			selected_decoders_.insert(item.id);
+		for (QAction *action : decoder_filter_menu_->actions())
+			if (action->isCheckable()) {
+				const QSignalBlocker blocker(action);
+				action->setChecked(true);
+			}
+		apply_decoder_filter();
+	});
+	connect(clear, &QAction::triggered, this, [this]() {
+		selected_decoders_.clear();
+		for (QAction *action : decoder_filter_menu_->actions())
+			if (action->isCheckable()) {
+				const QSignalBlocker blocker(action);
+				action->setChecked(false);
+			}
+		apply_decoder_filter();
+	});
+
+	for (const FilterItem &item : available_decoders_) {
+		QAction *const action = decoder_filter_menu_->addAction(item.label);
+		action->setCheckable(true);
+		action->setChecked(selected_decoders_.contains(item.id));
+		action->setData(QVariant::fromValue<qulonglong>(item.id));
+		connect(action, &QAction::toggled, this,
+			[this, id=item.id](bool checked) {
+				if (checked)
+					selected_decoders_.insert(id);
+				else
+					selected_decoders_.remove(id);
+				apply_decoder_filter();
+			});
+	}
+}
+
+void View::rebuild_filter_menu(QMenu *menu, const vector<FilterItem> &items,
+	bool groups)
+{
+	menu->clear();
+
+	QAction *const select_all = menu->addAction(tr("Select all"));
+	QAction *const clear = menu->addAction(tr("Clear"));
+	menu->addSeparator();
+
+	connect(select_all, &QAction::triggered, this,
+		[this, menu, groups]() {
+			set_all_filter_items(menu, true, groups);
+		});
+	connect(clear, &QAction::triggered, this,
+		[this, menu, groups]() {
+			set_all_filter_items(menu, false, groups);
+		});
+
+	QString current_decoder;
+	for (const FilterItem &item : items) {
+		if (item.decoder_name != current_decoder) {
+			current_decoder = item.decoder_name;
+			menu->addSection(current_decoder);
+		}
+
+		QAction *const action = menu->addAction(
+			item.label.isEmpty() ? tr("(unnamed)") : item.label);
+		action->setCheckable(true);
+		action->setChecked(groups ? selected_groups_.contains(item.id) :
+			selected_types_.contains(item.id));
+		action->setData(QVariant::fromValue<qulonglong>(item.id));
+		action->setProperty("decoder_name", item.decoder_name);
+		connect(action, &QAction::toggled, this,
+			[this, id=item.id, groups](bool checked) {
+			QSet<quintptr> &selected = groups ? selected_groups_ : selected_types_;
+			if (checked)
+				selected.insert(id);
+			else
+				selected.remove(id);
+			if (groups)
+				apply_group_filter();
+			else
+				apply_type_filter();
+		});
+	}
+}
+
+void View::set_all_filter_items(QMenu *menu, bool checked, bool groups)
+{
+	QSet<quintptr> &selected = groups ? selected_groups_ : selected_types_;
+	const vector<FilterItem> &available = groups ? available_groups_ : available_types_;
+	selected.clear();
+	if (checked)
+		for (const FilterItem &item : available)
+			selected.insert(item.id);
+	for (QAction *action : menu->actions()) {
+		if (!action->isCheckable())
+			continue;
+		const QSignalBlocker blocker(action);
+		action->setChecked(checked);
+	}
+	if (groups)
+		apply_group_filter();
+	else
+		apply_type_filter();
+}
+
+void View::apply_group_filter()
+{
+	group_filter_button_->setText(filter_button_text(
+		tr("Groups"), selected_groups_.size(),
+		static_cast<qsizetype>(available_groups_.size())));
+	group_filter_button_->setEnabled(!available_groups_.empty());
+	model_->set_group_filter(selected_groups_,
+		selected_groups_.size() != static_cast<qsizetype>(available_groups_.size()));
+}
+
+void View::apply_decoder_filter()
+{
+	decoder_filter_button_->setText(filter_button_text(
+		tr("Decoders"), selected_decoders_.size(),
+		static_cast<qsizetype>(available_decoders_.size())));
+	decoder_filter_button_->setEnabled(!available_decoders_.empty());
+	model_->set_decoder_filter(selected_decoders_,
+		selected_decoders_.size() !=
+		static_cast<qsizetype>(available_decoders_.size()));
+}
+
+void View::apply_type_filter()
+{
+	type_filter_button_->setText(filter_button_text(
+		tr("Types"), selected_types_.size(),
+		static_cast<qsizetype>(available_types_.size())));
+	type_filter_button_->setEnabled(!available_types_.empty());
+	model_->set_type_filter(selected_types_,
+		selected_types_.size() != static_cast<qsizetype>(available_types_.size()));
 }
 
 void View::save_data_as_csv(unsigned int save_type) const
@@ -390,7 +684,7 @@ void View::save_data_as_csv(unsigned int save_type) const
 			if (table_view_->horizontalHeader()->isSectionHidden(column))
 				continue;
 
-			const QString title = filter_proxy_model_->headerData(column, Qt::Horizontal, Qt::DisplayRole).toString();
+			const QString title = model_->headerData(column, Qt::Horizontal, Qt::DisplayRole).toString();
 
 			if (save_type == SaveTypeCSVEscaped)
 				out_stream << title;
@@ -415,8 +709,8 @@ void View::save_data_as_csv(unsigned int save_type) const
 				if (table_view_->horizontalHeader()->isSectionHidden(column))
 					continue;
 
-				const QModelIndex idx = filter_proxy_model_->index(row, column);
-				QString s = filter_proxy_model_->data(idx, Qt::DisplayRole).toString();
+				const QModelIndex idx = model_->index(row, column);
+				QString s = model_->data(idx, Qt::DisplayRole).toString();
 
 				if (save_type == SaveTypeCSVEscaped)
 					out_stream << s.replace(",", "\\,");
@@ -469,15 +763,8 @@ void View::on_selected_decoder_changed(int index)
 		connect(signal_, SIGNAL(decode_reset()), this, SLOT(on_decoder_reset()));
 	}
 
+	rebuild_annotation_filters();
 	update_data();
-
-	// Force repaint, otherwise the new selection isn't shown for some reason
-	table_view_->viewport()->update();
-}
-
-void View::on_hide_hidden_changed(bool checked)
-{
-	model_->set_hide_hidden(checked);
 
 	// Force repaint, otherwise the new selection isn't shown for some reason
 	table_view_->viewport()->update();
@@ -486,7 +773,7 @@ void View::on_hide_hidden_changed(bool checked)
 void View::on_view_mode_changed(int index)
 {
 	if (index == ViewModeAll)
-		filter_proxy_model_->enable_range_filtering(false);
+		model_->enable_range_filtering(false);
 
 	if (index == ViewModeVisible) {
 		MetadataObject *md_obj =
@@ -496,16 +783,16 @@ void View::on_view_mode_changed(int index)
 		int64_t start_sample = md_obj->value(MetadataValueStartSample).toLongLong();
 		int64_t end_sample = md_obj->value(MetadataValueEndSample).toLongLong();
 
-		filter_proxy_model_->enable_range_filtering(true);
-		filter_proxy_model_->set_sample_range(max((int64_t)0, start_sample),
+		model_->set_sample_range(max((int64_t)0, start_sample),
 			max((int64_t)0, end_sample));
+		model_->enable_range_filtering(true);
 	}
 
 	if (index == ViewModeLatest) {
-		filter_proxy_model_->enable_range_filtering(false);
+		model_->enable_range_filtering(false);
 
 		table_view_->scrollTo(
-			filter_proxy_model_->mapFromSource(model_->index(model_->rowCount() - 1, 0)),
+			model_->index(model_->rowCount() - 1, 0),
 			QAbstractItemView::PositionAtBottom);
 	}
 }
@@ -544,7 +831,7 @@ void View::on_new_annotations()
 	if (view_mode_selector_->currentIndex() == ViewModeLatest) {
 		update_data();
 		table_view_->scrollTo(
-			filter_proxy_model_->index(filter_proxy_model_->rowCount() - 1, 0),
+			model_->index(model_->rowCount() - 1, 0),
 			QAbstractItemView::PositionAtBottom);
 	} else {
 		if (!delayed_view_updater_.isActive())
@@ -580,6 +867,9 @@ void View::on_decoder_stacked(void* decoder)
 		// Add the decoder to the list
 		decoder_selector_->addItem(signal->name(), QVariant::fromValue((void*)d));
 	}
+
+	if (signal == signal_)
+		rebuild_annotation_filters();
 }
 
 void View::on_decoder_removed(void* decoder)
@@ -591,6 +881,8 @@ void View::on_decoder_removed(void* decoder)
 
 	if (index != -1)
 		decoder_selector_->removeItem(index);
+
+	rebuild_annotation_filters();
 }
 
 void View::on_actionSave_triggered(QAction* action)
@@ -613,9 +905,7 @@ void View::on_table_item_clicked(const QModelIndex& index)
 
 void View::on_table_item_double_clicked(const QModelIndex& index)
 {
-	const QModelIndex src_idx = filter_proxy_model_->mapToSource(index);
-
-	const Annotation* ann = static_cast<const Annotation*>(src_idx.internalPointer());
+	const Annotation* ann = static_cast<const Annotation*>(index.internalPointer());
 	assert(ann);
 
 	shared_ptr<views::ViewBase> main_view = session_.main_view();
@@ -631,7 +921,7 @@ void View::on_table_header_requested(const QPoint& pos)
 		int column = table_view_->horizontalHeader()->logicalIndex(i);
 
 		const QString title =
-			filter_proxy_model_->headerData(column, Qt::Horizontal, Qt::DisplayRole).toString();
+			model_->headerData(column, Qt::Horizontal, Qt::DisplayRole).toString();
 		QAction* action = new QAction(title, this);
 
 		action->setCheckable(true);
@@ -669,15 +959,13 @@ void View::on_metadata_object_changed(MetadataObject* obj,
 		int64_t start_sample = obj->value(MetadataValueStartSample).toLongLong();
 		int64_t end_sample = obj->value(MetadataValueEndSample).toLongLong();
 
-		filter_proxy_model_->set_sample_range(max((int64_t)0, start_sample),
+		model_->set_sample_range(max((int64_t)0, start_sample),
 			max((int64_t)0, end_sample));
 	}
 
 	if (obj->type() == MetadataObjMousePos) {
-		QModelIndex first_visible_idx =
-			filter_proxy_model_->mapToSource(filter_proxy_model_->index(0, 0));
-		QModelIndex last_visible_idx =
-			filter_proxy_model_->mapToSource(filter_proxy_model_->index(filter_proxy_model_->rowCount() - 1, 0));
+		QModelIndex first_visible_idx = model_->index(0, 0);
+		QModelIndex last_visible_idx = model_->index(model_->rowCount() - 1, 0);
 
 		if (first_visible_idx.isValid()) {
 			const QModelIndex first_highlighted_idx =
@@ -685,8 +973,8 @@ void View::on_metadata_object_changed(MetadataObject* obj,
 					obj->value(MetadataValueStartSample).toLongLong());
 
 			if (view_mode_selector_->currentIndex() == ViewModeVisible) {
-				const QModelIndex idx = filter_proxy_model_->mapFromSource(first_highlighted_idx);
-				table_view_->scrollTo(idx, QAbstractItemView::EnsureVisible);
+				table_view_->scrollTo(first_highlighted_idx,
+					QAbstractItemView::EnsureVisible);
 			}
 
 			// Force repaint, otherwise the table doesn't immediately update for some reason

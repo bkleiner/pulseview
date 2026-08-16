@@ -21,6 +21,8 @@
 #include <QDebug>
 #include <QString>
 
+#include <cmath>
+
 #include "pv/views/tabular_decoder/view.hpp"
 
 #include "view.hpp"
@@ -39,6 +41,28 @@ namespace pv {
 namespace views {
 namespace tabular_decoder {
 
+namespace {
+
+QBrush contrasting_text_brush(const QColor &background)
+{
+	// Choose the text color with the higher WCAG contrast ratio. This keeps
+	// decoder colors readable independently of the application theme.
+	auto linear_component = [](qreal value) {
+		return (value <= 0.04045) ? (value / 12.92) :
+			std::pow((value + 0.055) / 1.055, 2.4);
+	};
+
+	const qreal luminance = 0.2126 * linear_component(background.redF()) +
+		0.7152 * linear_component(background.greenF()) +
+		0.0722 * linear_component(background.blueF());
+	const qreal black_contrast = (luminance + 0.05) / 0.05;
+	const qreal white_contrast = 1.05 / (luminance + 0.05);
+
+	return QBrush(black_contrast >= white_contrast ? Qt::black : Qt::white);
+}
+
+} // namespace
+
 AnnotationCollectionModel::AnnotationCollectionModel(QObject* parent) :
 	QAbstractTableModel(parent),
 	all_annotations_(nullptr),
@@ -47,8 +71,15 @@ AnnotationCollectionModel::AnnotationCollectionModel(QObject* parent) :
 	first_hidden_column_(0),
 	prev_segment_(0),
 	prev_last_row_(0),
+	processed_annotation_count_(0),
 	had_highlight_before_(false),
-	hide_hidden_(false)
+	hide_hidden_(false),
+	range_start_sample_(0),
+	range_end_sample_(0),
+	group_filtering_enabled_(false),
+	type_filtering_enabled_(false),
+	decoder_filtering_enabled_(false),
+	range_filtering_enabled_(false)
 {
 	// Note: when adding entries, consider ViewVisibleFilterProxyModel::filterAcceptsRow()
 
@@ -56,8 +87,8 @@ AnnotationCollectionModel::AnnotationCollectionModel(QObject* parent) :
 	header_data_.emplace_back(tr("Sample"));    i++; // Column #0
 	header_data_.emplace_back(tr("Time"));      i++; // Column #1
 	header_data_.emplace_back(tr("Decoder"));   i++; // Column #2
-	header_data_.emplace_back(tr("Ann Row"));   i++; // Column #3
-	header_data_.emplace_back(tr("Ann Class")); i++; // Column #4
+	header_data_.emplace_back(tr("Group"));     i++; // Column #3
+	header_data_.emplace_back(tr("Type"));      i++; // Column #4
 	header_data_.emplace_back(tr("Value"));     i++; // Column #5
 
 	first_hidden_column_ = i;
@@ -105,25 +136,37 @@ QVariant AnnotationCollectionModel::data(const QModelIndex& index, int role) con
 	const Annotation* ann =
 		static_cast<const Annotation*>(index.internalPointer());
 
+	if (role == AnnotationGroupIdRole)
+		return QVariant::fromValue<qulonglong>(
+			reinterpret_cast<quintptr>(ann->row()));
+
+	if (role == AnnotationTypeIdRole) {
+		const data::decode::AnnotationClass *ann_class =
+			ann->row()->decoder()->get_ann_class_by_id(ann->ann_class_id());
+		return QVariant::fromValue<qulonglong>(
+			reinterpret_cast<quintptr>(ann_class));
+	}
+
+	if (role == AnnotationDecoderIdRole)
+		return QVariant::fromValue<qulonglong>(
+			reinterpret_cast<quintptr>(ann->row()->decoder()));
+
 	if ((role == Qt::DisplayRole) || (role == Qt::ToolTipRole))
 		return data_from_ann(ann, index.column());
 
 	if (role == Qt::ForegroundRole) {
 		if (index.column() >= get_hierarchy_level(ann)) {
-			// Invert the text color if this cell is highlighted
 			const bool must_highlight = (highlight_sample_num_ > 0) &&
 				((int64_t)ann->start_sample() <= highlight_sample_num_) &&
 				((int64_t)ann->end_sample() >= highlight_sample_num_);
+			const QColor background = must_highlight ? ann->color() :
+				(GlobalSettings::current_theme_is_dark() ?
+					ann->dark_color() : ann->bright_color());
 
-			if (must_highlight) {
-				if (GlobalSettings::current_theme_is_dark())
-					return QApplication::palette().brush(QPalette::Window);
-				else
-					return QApplication::palette().brush(QPalette::WindowText);
-			}
+			return contrasting_text_brush(background);
 		}
 
-		return QApplication::palette().brush(QPalette::WindowText);
+		return QApplication::palette().brush(QPalette::Text);
 	}
 
 	if (role == Qt::BackgroundRole) {
@@ -222,6 +265,7 @@ void AnnotationCollectionModel::set_signal_and_segment(data::DecodeSignal* signa
 		all_annotations_ = nullptr;
 		dataset_ = nullptr;
 		signal_ = nullptr;
+		processed_annotation_count_ = 0;
 
 		dataChanged(QModelIndex(), QModelIndex());
 		layoutChanged();
@@ -232,7 +276,14 @@ void AnnotationCollectionModel::set_signal_and_segment(data::DecodeSignal* signa
 		for (const shared_ptr<Decoder>& dec : signal_->decoder_stack())
 			disconnect(dec.get(), nullptr, this, SLOT(on_annotation_visibility_changed()));
 
-	all_annotations_ = signal->get_all_annotations_by_segment(current_segment);
+	const deque<const Annotation*> *const new_annotations =
+		signal->get_all_annotations_by_segment(current_segment);
+	const bool can_append = (signal_ == signal) &&
+		(prev_segment_ == current_segment) &&
+		(all_annotations_ == new_annotations) && new_annotations &&
+		(processed_annotation_count_ <= new_annotations->size());
+
+	all_annotations_ = new_annotations;
 	signal_ = signal;
 
 	for (const shared_ptr<Decoder>& dec : signal_->decoder_stack())
@@ -240,13 +291,16 @@ void AnnotationCollectionModel::set_signal_and_segment(data::DecodeSignal* signa
 			this, SLOT(on_annotation_visibility_changed()));
 
 	if (hide_hidden_) {
-		update_annotations_without_hidden();
+		update_annotations_without_hidden(can_append ? processed_annotation_count_ : 0);
 		dataset_ = &all_annotations_without_hidden_;
 	} else
 		dataset_ = all_annotations_;
 
 	if (!dataset_ || dataset_->empty()) {
 		prev_segment_ = current_segment;
+		prev_last_row_ = 0;
+		dataChanged(QModelIndex(), QModelIndex());
+		layoutChanged();
 		return;
 	}
 
@@ -290,26 +344,100 @@ void AnnotationCollectionModel::set_hide_hidden(bool hide_hidden)
 	layoutChanged();
 }
 
-void AnnotationCollectionModel::update_annotations_without_hidden()
+void AnnotationCollectionModel::update_annotations_without_hidden(size_t start_index)
 {
-	uint64_t count = 0;
-
 	if (!all_annotations_ || all_annotations_->empty()) {
 		all_annotations_without_hidden_.clear();
+		processed_annotation_count_ = 0;
 		return;
 	}
+	if (start_index == 0)
+		all_annotations_without_hidden_.clear();
 
-	for (const Annotation* ann : *all_annotations_) {
+	for (size_t index = start_index; index < all_annotations_->size(); index++) {
+		const Annotation *const ann = all_annotations_->at(index);
 		if (!ann->visible())
 			continue;
+		if (range_filtering_enabled_ &&
+			((ann->end_sample() < range_start_sample_) ||
+			(ann->start_sample() > range_end_sample_)))
+			continue;
+		if (decoder_filtering_enabled_ &&
+			!decoder_filter_.contains(
+				reinterpret_cast<quintptr>(ann->row()->decoder())))
+			continue;
+		if (group_filtering_enabled_ &&
+			!group_filter_.contains(reinterpret_cast<quintptr>(ann->row())))
+			continue;
+		if (type_filtering_enabled_) {
+			const data::decode::AnnotationClass *const ann_class =
+				ann->row()->decoder()->get_ann_class_by_id(ann->ann_class_id());
+			if (!type_filter_.contains(reinterpret_cast<quintptr>(ann_class)))
+				continue;
+		}
+		if (!search_text_.isEmpty() &&
+			!ann->longest_annotation().contains(search_text_, Qt::CaseInsensitive))
+			continue;
 
-		if (all_annotations_without_hidden_.size() < (count + 100))
-			all_annotations_without_hidden_.resize(count + 100);
-
-		all_annotations_without_hidden_[count++] = ann;
+		all_annotations_without_hidden_.push_back(ann);
 	}
 
-	all_annotations_without_hidden_.resize(count);
+	processed_annotation_count_ = all_annotations_->size();
+}
+
+void AnnotationCollectionModel::refilter_annotations()
+{
+	layoutAboutToBeChanged();
+	update_annotations_without_hidden();
+	dataset_ = &all_annotations_without_hidden_;
+	if (rowCount() > 0)
+		dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
+	layoutChanged();
+}
+
+void AnnotationCollectionModel::set_search_text(const QString &text)
+{
+	search_text_ = text;
+	refilter_annotations();
+}
+
+void AnnotationCollectionModel::set_group_filter(const QSet<quintptr> &groups,
+	bool enabled)
+{
+	group_filter_ = groups;
+	group_filtering_enabled_ = enabled;
+	refilter_annotations();
+}
+
+void AnnotationCollectionModel::set_type_filter(const QSet<quintptr> &types,
+	bool enabled)
+{
+	type_filter_ = types;
+	type_filtering_enabled_ = enabled;
+	refilter_annotations();
+}
+
+void AnnotationCollectionModel::set_decoder_filter(const QSet<quintptr> &decoders,
+	bool enabled)
+{
+	decoder_filter_ = decoders;
+	decoder_filtering_enabled_ = enabled;
+	refilter_annotations();
+}
+
+void AnnotationCollectionModel::set_sample_range(uint64_t start_sample,
+	uint64_t end_sample)
+{
+	range_start_sample_ = start_sample;
+	range_end_sample_ = end_sample;
+	if (range_filtering_enabled_)
+		refilter_annotations();
+}
+
+void AnnotationCollectionModel::enable_range_filtering(bool enabled)
+{
+	range_filtering_enabled_ = enabled;
+	refilter_annotations();
 }
 
 QModelIndex AnnotationCollectionModel::update_highlighted_rows(QModelIndex first,

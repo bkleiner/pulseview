@@ -21,9 +21,11 @@
 #define PULSEVIEW_PV_VIEWS_TABULAR_DECODER_VIEW_HPP
 
 #include <QAction>
-#include <QCheckBox>
 #include <QComboBox>
 #include <QKeyEvent>
+#include <QLineEdit>
+#include <QMenu>
+#include <QSet>
 #include <QSortFilterProxyModel>
 #include <QTableView>
 #include <QToolButton>
@@ -57,6 +59,12 @@ enum ViewModeType {
 extern const char* SaveTypeNames[SaveTypeCount];
 extern const char* ViewModeNames[ViewModeCount];
 
+enum AnnotationDataRole {
+	AnnotationGroupIdRole = Qt::UserRole,
+	AnnotationTypeIdRole,
+	AnnotationDecoderIdRole
+};
+
 
 class AnnotationCollectionModel : public QAbstractTableModel
 {
@@ -83,8 +91,15 @@ public:
 
 	void set_signal_and_segment(data::DecodeSignal* signal, uint32_t current_segment);
 	void set_hide_hidden(bool hide_hidden);
+	void set_search_text(const QString &text);
+	void set_group_filter(const QSet<quintptr> &groups, bool enabled);
+	void set_type_filter(const QSet<quintptr> &types, bool enabled);
+	void set_decoder_filter(const QSet<quintptr> &decoders, bool enabled);
+	void set_sample_range(uint64_t start_sample, uint64_t end_sample);
+	void enable_range_filtering(bool enabled);
 
-	void update_annotations_without_hidden();
+	void update_annotations_without_hidden(size_t start_index = 0);
+	void refilter_annotations();
 	QModelIndex update_highlighted_rows(QModelIndex first, QModelIndex last,
 		int64_t sample_num);
 
@@ -100,9 +115,15 @@ private:
 	uint8_t first_hidden_column_;
 	uint32_t prev_segment_;
 	uint64_t prev_last_row_;
+	size_t processed_annotation_count_;
 	int64_t highlight_sample_num_;
 	bool had_highlight_before_;
 	bool hide_hidden_;
+	QString search_text_;
+	QSet<quintptr> group_filter_, type_filter_, decoder_filter_;
+	uint64_t range_start_sample_, range_end_sample_;
+	bool group_filtering_enabled_, type_filtering_enabled_;
+	bool decoder_filtering_enabled_, range_filtering_enabled_;
 };
 
 
@@ -114,6 +135,9 @@ public:
 	CustomFilterProxyModel(QObject* parent = 0);
 
 	void set_sample_range(uint64_t start_sample, uint64_t end_sample);
+	void set_search_text(const QString &text);
+	void set_group_filter(const QSet<quintptr> &groups, bool enabled);
+	void set_type_filter(const QSet<quintptr> &types, bool enabled);
 
 	void enable_range_filtering(bool value);
 
@@ -122,7 +146,10 @@ protected:
 
 private:
 	uint64_t range_start_sample_, range_end_sample_;
+	QString search_text_;
+	QSet<quintptr> group_filter_, type_filter_;
 	bool range_filtering_enabled_;
+	bool group_filtering_enabled_, type_filtering_enabled_;
 };
 
 
@@ -166,14 +193,26 @@ public:
 	virtual void restore_settings(QSettings &settings);
 
 private:
+	struct FilterItem {
+		QString decoder_name;
+		QString label;
+		quintptr id;
+	};
+
 	void reset_data();
 	void update_data();
+	void rebuild_annotation_filters();
+	void rebuild_decoder_filter_menu();
+	void rebuild_filter_menu(QMenu *menu, const vector<FilterItem> &items, bool groups);
+	void set_all_filter_items(QMenu *menu, bool checked, bool groups);
+	void apply_group_filter();
+	void apply_type_filter();
+	void apply_decoder_filter();
 
 	void save_data_as_csv(unsigned int save_type) const;
 
 private Q_SLOTS:
 	void on_selected_decoder_changed(int index);
-	void on_hide_hidden_changed(bool checked);
 	void on_view_mode_changed(int index);
 
 	void on_signal_name_changed(const QString &name);
@@ -200,15 +239,24 @@ private:
 	QWidget* parent_;
 
 	QComboBox* decoder_selector_;
-	QCheckBox* hide_hidden_cb_;
 	QComboBox* view_mode_selector_;
+	QLineEdit* search_edit_;
+	QToolButton* decoder_filter_button_;
+	QToolButton* group_filter_button_;
+	QToolButton* type_filter_button_;
+	QMenu* decoder_filter_menu_;
+	QMenu* group_filter_menu_;
+	QMenu* type_filter_menu_;
+	vector<FilterItem> available_decoders_;
+	vector<FilterItem> available_groups_, available_types_;
+	QSet<quintptr> selected_decoders_;
+	QSet<quintptr> selected_groups_, selected_types_;
 
 	QToolButton* save_button_;
 	QAction* save_action_;
 
 	CustomTableView* table_view_;
 	AnnotationCollectionModel* model_;
-	CustomFilterProxyModel* filter_proxy_model_;
 
 	data::DecodeSignal* signal_;
 	const data::decode::Decoder* decoder_;
