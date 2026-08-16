@@ -27,6 +27,8 @@
 #include <QMenu>
 #include <QApplication>
 
+#include <cmath>
+
 #include <libsigrokcxx/libsigrokcxx.hpp>
 
 #include <pv/widgets/popup.hpp>
@@ -69,10 +71,24 @@ QString Flag::get_display_text() const
 
 	if (!ref_item || (ref_item.get() == this))
 		s = text_;
-	else
-		s = Ruler::format_time_with_distance(
+	else {
+		const pv::util::Timestamp delta = abs(ref_item->delta(time_));
+		const QString time = Ruler::format_time_with_distance(
 			ref_item->time(), ref_item->delta(time_),
 			view_.tick_prefix(), view_.time_unit(), view_.tick_precision());
+
+		if ((view_.time_unit() == pv::util::TimeUnit::Time) && (delta > 0)) {
+			const double seconds = delta.convert_to<double>();
+			if ((seconds > 0) && std::isfinite(seconds)) {
+				const QString frequency = pv::util::format_value_si(
+					1.0 / seconds, pv::util::SIPrefix::unspecified,
+					12, "Hz", false);
+				s = QString("%1 (%2)").arg(time, frequency);
+			} else
+				s = time;
+		} else
+			s = time;
+	}
 
 	return s;
 }

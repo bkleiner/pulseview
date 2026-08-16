@@ -24,6 +24,7 @@
 
 #include <QAction>
 #include <QDebug>
+#include <QDir>
 #include <QFileDialog>
 #include <QHelpEvent>
 #include <QMenu>
@@ -341,6 +342,12 @@ QAction* MainBar::action_connect() const
 	return action_connect_;
 }
 
+void MainBar::refresh_config_selectors()
+{
+	update_sample_rate_selector();
+	update_sample_count_selector();
+}
+
 void MainBar::update_sample_rate_selector()
 {
 	Glib::VariantContainerBase gvar_dict;
@@ -550,6 +557,12 @@ void MainBar::update_device_config_widgets()
 	// Update the channels popup
 	Channels *const channels = new Channels(session_, this);
 	channels_button_.set_popup(channels);
+	connect(channels, &Channels::channels_changed, this, [this]() {
+		// Channel-count changes can alter both the current samplerate and
+		// the list of rates offered by the driver.
+		session_.update_samplerate();
+		update_sample_rate_selector();
+	});
 
 	// Update supported options.
 	sample_count_supported_ = false;
@@ -593,6 +606,7 @@ void MainBar::commit_sample_rate()
 		sr_dev->config_set(ConfigKey::SAMPLERATE,
 			Glib::Variant<guint64>::create(sample_rate));
 		update_sample_rate_selector();
+		session_.refresh_signals();
 
 		QSettings settings;
 		settings.setValue(SettingLastSampleRate,
@@ -657,7 +671,6 @@ void MainBar::export_file(shared_ptr<OutputFormat> format, bool selection_only, 
 	session_.stop_capture();
 
 	QSettings settings;
-	const QString dir = settings.value(SettingSaveDirectory).toString();
 
 	pair<uint64_t, uint64_t> sample_range;
 
@@ -708,8 +721,17 @@ void MainBar::export_file(shared_ptr<OutputFormat> format, bool selection_only, 
 			tr("All Files"));
 
 	// Show the file dialog
-	if (file_name.isEmpty())
-		file_name = QFileDialog::getSaveFileName(this, tr("Save File"), dir, filter);
+	if (file_name.isEmpty()) {
+		QString suggested_name = tr("new_session");
+		if (!exts.empty())
+			suggested_name += "." + QString::fromStdString(exts[0]);
+
+		const QString save_dir = settings.value(SettingSaveDirectory).toString();
+		const QString suggested_path = save_dir.isEmpty() ? suggested_name :
+			QDir(save_dir).filePath(suggested_name);
+		file_name = QFileDialog::getSaveFileName(
+			this, tr("Save File"), suggested_path, filter);
+	}
 
 	if (file_name.isEmpty())
 		return;
@@ -883,17 +905,23 @@ void MainBar::on_actionSaveSelectionAs_triggered()
 void MainBar::on_actionSaveSetup_triggered()
 {
 	QSettings settings;
-	const QString dir = settings.value(SettingSaveDirectory).toString();
+	const QString save_dir = settings.value(SettingSaveDirectory).toString();
+	const QString suggested_name = tr("new_session_setup.pvs");
+	const QString suggested_path = save_dir.isEmpty() ? suggested_name :
+		QDir(save_dir).filePath(suggested_name);
 
 	const QString file_name = QFileDialog::getSaveFileName(
-		this, tr("Save File"), dir, tr(
+		this, tr("Save File"), suggested_path, tr(
 				"PulseView Session Setups (*.pvs);;"
 				"All Files (*)"));
 
 	if (file_name.isEmpty())
 		return;
 
+	settings.setValue(SettingSaveDirectory, QFileInfo(file_name).absolutePath());
+
 	QSettings settings_storage(file_name, QSettings::IniFormat);
+	settings_storage.clear();
 	session_.save_setup(settings_storage);
 }
 

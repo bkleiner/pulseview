@@ -187,6 +187,8 @@ public:
 	void stop_capture();
 
 	double get_samplerate() const;
+	void update_samplerate();
+	void refresh_signals();
 	Glib::DateTime get_acquisition_start_time() const;
 
 	uint32_t get_highest_segment_id() const;
@@ -267,6 +269,7 @@ Q_SIGNALS:
 	void data_received();
 
 	void add_view(ViewType type, Session *session);
+	void remove_view(shared_ptr<views::ViewBase> view);
 	void session_error_raised(const QString text, const QString info_text);
 
 public Q_SLOTS:

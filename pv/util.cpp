@@ -199,11 +199,27 @@ static QString pad_number(unsigned int number, int length)
 
 QString format_time_minutes(const Timestamp& t, signed precision, bool sign)
 {
-	const Timestamp whole_seconds = floor(abs(t));
+	const Timestamp absolute_time = abs(t);
+	Timestamp whole_seconds = floor(absolute_time);
+	string fraction_text;
+
+	if (precision > 0) {
+		const Timestamp fraction = absolute_time - whole_seconds;
+		ostringstream ss;
+		ss << fixed << setprecision(precision) << setfill('0') << fraction;
+		fraction_text = ss.str();
+
+		// Rounding the fractional part can carry into the whole seconds.
+		if (!fraction_text.empty() && (fraction_text.front() == '1'))
+			whole_seconds += 1;
+	}
+
 	const Timestamp days = floor(whole_seconds / (60 * 60 * 24));
-	const unsigned int hours = fmod(whole_seconds / (60 * 60), 24).convert_to<uint>();
-	const unsigned int minutes = fmod(whole_seconds / 60, 60).convert_to<uint>();
-	const unsigned int seconds = fmod(whole_seconds, 60).convert_to<uint>();
+	const unsigned int seconds_in_day =
+		(whole_seconds - days * (60 * 60 * 24)).convert_to<unsigned int>();
+	const unsigned int hours = seconds_in_day / (60 * 60);
+	const unsigned int minutes = (seconds_in_day / 60) % 60;
+	const unsigned int seconds = seconds_in_day % 60;
 
 	QString s;
 	QTextStream ts(&s);
@@ -235,19 +251,13 @@ QString format_time_minutes(const Timestamp& t, signed precision, bool sign)
 	// SS
 	ts << pad_number(seconds, 2);
 
-	if (precision) {
+	if (precision > 0) {
 		ts << ".";
-
-		const Timestamp fraction = fabs(t) - whole_seconds;
-
-		ostringstream ss;
-		ss << fixed << setprecision(precision) << setfill('0') << fraction;
-		string fs = ss.str();
 
 		// Copy all digits, inserting spaces as unit separators
 		for (int i = 1; i <= precision; i++) {
 			// Start at index 2 to skip the "0." at the beginning
-			ts << fs.at(1 + i);
+			ts << fraction_text.at(1 + i);
 
 			if ((i > 0) && (i % 3 == 0) && (i != precision))
 				ts << " ";

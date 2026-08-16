@@ -176,6 +176,7 @@ void Channels::set_all_channels(bool set)
 	}
 
 	updating_channels_ = false;
+	Q_EMIT channels_changed();
 }
 
 void Channels::enable_channels_conditionally(
@@ -195,6 +196,7 @@ void Channels::enable_channels_conditionally(
 	}
 
 	updating_channels_ = false;
+	Q_EMIT channels_changed();
 }
 
 void Channels::disable_channels_conditionally(
@@ -214,6 +216,7 @@ void Channels::disable_channels_conditionally(
 	}
 
 	updating_channels_ = false;
+	Q_EMIT channels_changed();
 }
 
 void Channels::populate_group(shared_ptr<ChannelGroup> group,
@@ -371,6 +374,7 @@ void Channels::on_channel_checked(QObject *widget)
 	assert(s);
 
 	s->set_enabled(check_box->isChecked());
+	Q_EMIT channels_changed();
 }
 
 void Channels::enable_all_channels()
