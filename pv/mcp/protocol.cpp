@@ -9,6 +9,8 @@
 
 #include "protocol.hpp"
 
+#include "catalog.hpp"
+
 namespace pv {
 namespace mcp {
 
@@ -44,7 +46,7 @@ bool Protocol::handle(const QJsonObject& request, QJsonObject& response) const
 
 		QJsonObject server_info;
 		server_info.insert(QStringLiteral("name"), QStringLiteral("pulseview"));
-		server_info.insert(QStringLiteral("version"), QStringLiteral("0.1"));
+		server_info.insert(QStringLiteral("version"), QStringLiteral("0.2"));
 
 		QJsonObject tool_capabilities;
 		tool_capabilities.insert(QStringLiteral("listChanged"), false);
@@ -55,6 +57,7 @@ bool Protocol::handle(const QJsonObject& request, QJsonObject& response) const
 		result.insert(QStringLiteral("protocolVersion"), version);
 		result.insert(QStringLiteral("capabilities"), capabilities);
 		result.insert(QStringLiteral("serverInfo"), server_info);
+		result.insert(QStringLiteral("instructions"), server_instructions());
 		response = success_response(id, result);
 		return true;
 	}

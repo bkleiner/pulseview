@@ -27,8 +27,17 @@ public:
 		QJsonObject& result, QString& error) const override;
 
 private:
-	QJsonObject list_sessions() const;
-	bool get_view_context(const QJsonObject& arguments,
+	bool get_session(const QJsonObject& arguments,
+		QJsonObject& result, QString& error) const;
+	bool get_capture(const QJsonObject& arguments,
+		QJsonObject& result, QString& error) const;
+	bool start_capture(const QJsonObject& arguments,
+		QJsonObject& result, QString& error) const;
+	bool set_session(const QJsonObject& arguments,
+		QJsonObject& result, QString& error) const;
+	bool save_session(const QJsonObject& arguments,
+		QJsonObject& result, QString& error) const;
+	bool load_session(const QJsonObject& arguments,
 		QJsonObject& result, QString& error) const;
 	bool query_annotations(const QJsonObject& arguments,
 		QJsonObject& result, QString& error) const;

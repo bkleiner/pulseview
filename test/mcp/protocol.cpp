@@ -68,6 +68,8 @@ BOOST_AUTO_TEST_CASE(initialize)
 		QStringLiteral("2025-06-18"));
 	BOOST_CHECK(result.value(QStringLiteral("capabilities")).toObject()
 		.contains(QStringLiteral("tools")));
+	BOOST_CHECK(result.value(QStringLiteral("instructions")).toString()
+		.contains(QStringLiteral("active PulseView session")));
 }
 
 BOOST_AUTO_TEST_CASE(list_and_call_tools)

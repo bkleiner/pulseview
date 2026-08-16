@@ -10,20 +10,39 @@
 #include "tools.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <limits>
+#include <mutex>
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QElapsedTimer>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QSet>
+#include <QThread>
+
+#include <glibmm/variant.h>
+#include <libsigrokcxx/libsigrokcxx.hpp>
 
 #ifdef ENABLE_DECODE
 #include "pv/data/decodesignal.hpp"
 #endif
 #include "pv/devices/device.hpp"
+#include "pv/devicemanager.hpp"
 #include "pv/session.hpp"
+#include "pv/storesession.hpp"
+#include "pv/toolbars/mainbar.hpp"
+#include "pv/data/logic.hpp"
+#include "pv/data/logicsegment.hpp"
+#include "pv/data/signalbase.hpp"
 #include "pv/views/trace/cursor.hpp"
 #include "pv/views/trace/cursorpair.hpp"
+#include "pv/views/trace/logicsignal.hpp"
+#include "pv/views/trace/signal.hpp"
 #include "pv/views/trace/view.hpp"
 #include "pv/views/trace/viewport.hpp"
+#include "catalog.hpp"
 #include "sessionregistry.hpp"
 
 namespace pv {
@@ -43,34 +62,6 @@ QString capture_state_name(Session::capture_state state)
 	}
 
 	return QStringLiteral("unknown");
-}
-
-QJsonObject empty_schema()
-{
-	QJsonObject schema;
-	schema.insert(QStringLiteral("type"), QStringLiteral("object"));
-	schema.insert(QStringLiteral("additionalProperties"), false);
-	return schema;
-}
-
-QJsonObject string_property(const QString& description)
-{
-	QJsonObject property;
-	property.insert(QStringLiteral("type"), QStringLiteral("string"));
-	property.insert(QStringLiteral("description"), description);
-	return property;
-}
-
-QJsonObject tool_schema(const QJsonObject& properties,
-	const QJsonArray& required = QJsonArray())
-{
-	QJsonObject schema;
-	schema.insert(QStringLiteral("type"), QStringLiteral("object"));
-	schema.insert(QStringLiteral("properties"), properties);
-	schema.insert(QStringLiteral("additionalProperties"), false);
-	if (!required.isEmpty())
-		schema.insert(QStringLiteral("required"), required);
-	return schema;
 }
 
 bool resolve_session(const SessionRegistry& sessions, const QJsonObject& arguments,
@@ -163,6 +154,52 @@ bool sample_value(const QJsonObject& arguments, const QString& name,
 	return true;
 }
 
+bool require_generation(const SessionRegistry::Entry& entry,
+	const QJsonObject& arguments, QString& error)
+{
+	if (arguments.value(QStringLiteral("generation")).toString() !=
+		QString::number(entry.generation)) {
+		error = QStringLiteral("Stale generation; current generation is %1")
+			.arg(entry.generation);
+		return false;
+	}
+	return true;
+}
+
+const sigrok::TriggerMatchType* trigger_type(const QString& name, bool& valid)
+{
+	valid = true;
+	const QString value = name.toLower();
+	if (value.isEmpty() || value == QStringLiteral("none"))
+		return nullptr;
+	if (value == QStringLiteral("low") || value == QStringLiteral("zero"))
+		return sigrok::TriggerMatchType::ZERO;
+	if (value == QStringLiteral("high") || value == QStringLiteral("one"))
+		return sigrok::TriggerMatchType::ONE;
+	if (value == QStringLiteral("rising"))
+		return sigrok::TriggerMatchType::RISING;
+	if (value == QStringLiteral("falling"))
+		return sigrok::TriggerMatchType::FALLING;
+	if (value == QStringLiteral("edge") || value == QStringLiteral("change"))
+		return sigrok::TriggerMatchType::EDGE;
+	valid = false;
+	return nullptr;
+}
+
+QString trigger_name(const sigrok::TriggerMatchType *type)
+{
+	if (!type)
+		return QStringLiteral("none");
+	switch (type->id()) {
+	case SR_TRIGGER_ZERO: return QStringLiteral("low");
+	case SR_TRIGGER_ONE: return QStringLiteral("high");
+	case SR_TRIGGER_RISING: return QStringLiteral("rising");
+	case SR_TRIGGER_FALLING: return QStringLiteral("falling");
+	case SR_TRIGGER_EDGE: return QStringLiteral("edge");
+	default: return QStringLiteral("unknown");
+	}
+}
+
 #ifdef ENABLE_DECODE
 struct AnnotationEvent {
 	uint32_t signal_index;
@@ -180,128 +217,30 @@ Tools::Tools(SessionRegistry& sessions) :
 
 QJsonArray Tools::list_tools() const
 {
-	QJsonObject annotations;
-	annotations.insert(QStringLiteral("readOnlyHint"), true);
-	annotations.insert(QStringLiteral("destructiveHint"), false);
-
-	QJsonObject list_sessions_tool;
-	list_sessions_tool.insert(QStringLiteral("name"), QStringLiteral("list_sessions"));
-	list_sessions_tool.insert(QStringLiteral("description"),
-		QStringLiteral("List the sessions currently open in this PulseView instance."));
-	list_sessions_tool.insert(QStringLiteral("inputSchema"), empty_schema());
-	list_sessions_tool.insert(QStringLiteral("annotations"), annotations);
-
-	QJsonObject session_id;
-	session_id.insert(QStringLiteral("type"), QStringLiteral("string"));
-	session_id.insert(QStringLiteral("description"),
-		QStringLiteral("Session ID from list_sessions; omit to use the active session."));
-	QJsonObject properties;
-	properties.insert(QStringLiteral("session_id"), session_id);
-	QJsonObject view_schema;
-	view_schema.insert(QStringLiteral("type"), QStringLiteral("object"));
-	view_schema.insert(QStringLiteral("properties"), properties);
-	view_schema.insert(QStringLiteral("additionalProperties"), false);
-
-	QJsonObject view_tool;
-	view_tool.insert(QStringLiteral("name"), QStringLiteral("get_view_context"));
-	view_tool.insert(QStringLiteral("description"),
-		QStringLiteral("Get the active trace view's exact visible range and cursors."));
-	view_tool.insert(QStringLiteral("inputSchema"), view_schema);
-	view_tool.insert(QStringLiteral("annotations"), annotations);
-
-	QJsonObject range;
-	range.insert(QStringLiteral("type"), QStringLiteral("string"));
-	range.insert(QStringLiteral("enum"), QJsonArray{
-		QStringLiteral("cursor"), QStringLiteral("visible"), QStringLiteral("all")});
-	QJsonObject limit;
-	limit.insert(QStringLiteral("type"), QStringLiteral("integer"));
-	limit.insert(QStringLiteral("minimum"), 1);
-	limit.insert(QStringLiteral("maximum"), 1000);
-	limit.insert(QStringLiteral("description"), QStringLiteral(
-		"Page size (default 500, maximum 1000). Follow next_continuation_token "
-		"to retrieve additional pages."));
-	QJsonObject query_properties;
-	query_properties.insert(QStringLiteral("session_id"), session_id);
-	query_properties.insert(QStringLiteral("decode_signal_id"),
-		string_property(QStringLiteral("Decode signal ID from list_sessions; omit for all.")));
-	query_properties.insert(QStringLiteral("segment_id"),
-		QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
-			{QStringLiteral("minimum"), 0}});
-	query_properties.insert(QStringLiteral("range"), range);
-	query_properties.insert(QStringLiteral("start_sample"),
-		string_property(QStringLiteral("Inclusive explicit range start sample.")));
-	query_properties.insert(QStringLiteral("end_sample"),
-		string_property(QStringLiteral("Inclusive explicit range end sample.")));
-	query_properties.insert(QStringLiteral("visible_only"),
-		QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
-	query_properties.insert(QStringLiteral("text_filter"),
-		QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}});
-	query_properties.insert(QStringLiteral("limit"), limit);
-	query_properties.insert(QStringLiteral("continuation_token"),
-		string_property(QStringLiteral(
-			"Token returned by the previous page; repeat the same query parameters.")));
-	QJsonObject query_tool;
-	query_tool.insert(QStringLiteral("name"), QStringLiteral("query_annotations"));
-	query_tool.insert(QStringLiteral("description"), QStringLiteral(
-		"Query a page of copied protocol-decoder annotations overlapping an explicit, "
-		"cursor, visible, or full range. Follow next_continuation_token until absent."));
-	query_tool.insert(QStringLiteral("inputSchema"), tool_schema(query_properties));
-	query_tool.insert(QStringLiteral("annotations"), annotations);
-
-	QJsonObject write_annotations;
-	write_annotations.insert(QStringLiteral("readOnlyHint"), false);
-	write_annotations.insert(QStringLiteral("destructiveHint"), false);
-	write_annotations.insert(QStringLiteral("idempotentHint"), true);
-	QJsonObject cursor_properties;
-	cursor_properties.insert(QStringLiteral("session_id"), session_id);
-	cursor_properties.insert(QStringLiteral("generation"),
-		string_property(QStringLiteral("Current generation from get_view_context.")));
-	cursor_properties.insert(QStringLiteral("visible"),
-		QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
-	cursor_properties.insert(QStringLiteral("start_sample"),
-		string_property(QStringLiteral("First cursor sample; required when visible is true.")));
-	cursor_properties.insert(QStringLiteral("end_sample"),
-		string_property(QStringLiteral("Second cursor sample; required when visible is true.")));
-	QJsonObject cursor_tool;
-	cursor_tool.insert(QStringLiteral("name"), QStringLiteral("set_cursors"));
-	cursor_tool.insert(QStringLiteral("description"), QStringLiteral(
-		"Show, move, or hide the active trace view cursors. Requires a current generation."));
-	cursor_tool.insert(QStringLiteral("inputSchema"), tool_schema(cursor_properties,
-		QJsonArray{QStringLiteral("generation"), QStringLiteral("visible")}));
-	cursor_tool.insert(QStringLiteral("annotations"), write_annotations);
-
-	QJsonObject zoom_properties;
-	zoom_properties.insert(QStringLiteral("session_id"), session_id);
-	zoom_properties.insert(QStringLiteral("generation"),
-		string_property(QStringLiteral("Current generation from get_view_context.")));
-	zoom_properties.insert(QStringLiteral("start_sample"),
-		string_property(QStringLiteral("Visible range start sample.")));
-	zoom_properties.insert(QStringLiteral("end_sample"),
-		string_property(QStringLiteral("Visible range end sample.")));
-	QJsonObject zoom_tool;
-	zoom_tool.insert(QStringLiteral("name"), QStringLiteral("zoom_to_range"));
-	zoom_tool.insert(QStringLiteral("description"), QStringLiteral(
-		"Set the active trace view to an exact sample range. Requires a current generation."));
-	zoom_tool.insert(QStringLiteral("inputSchema"), tool_schema(zoom_properties,
-		QJsonArray{QStringLiteral("generation"), QStringLiteral("start_sample"),
-			QStringLiteral("end_sample")}));
-	zoom_tool.insert(QStringLiteral("annotations"), write_annotations);
-
-	return QJsonArray{list_sessions_tool, view_tool, query_tool, cursor_tool, zoom_tool};
+	return tool_catalog();
 }
 
 bool Tools::call_tool(const QString& name, const QJsonObject& arguments,
 	QJsonObject& result, QString& error) const
 {
 	QJsonObject structured;
-	if (name == QStringLiteral("list_sessions")) {
-		if (!arguments.isEmpty()) {
-			error = QStringLiteral("list_sessions does not accept arguments");
+	if (name == QStringLiteral("get_session")) {
+		if (!get_session(arguments, structured, error))
 			return false;
-		}
-		structured = list_sessions();
-	} else if (name == QStringLiteral("get_view_context")) {
-		if (!get_view_context(arguments, structured, error))
+	} else if (name == QStringLiteral("get_capture")) {
+		if (!get_capture(arguments, structured, error))
+			return false;
+	} else if (name == QStringLiteral("start_capture")) {
+		if (!start_capture(arguments, structured, error))
+			return false;
+	} else if (name == QStringLiteral("set_session")) {
+		if (!set_session(arguments, structured, error))
+			return false;
+	} else if (name == QStringLiteral("save_session")) {
+		if (!save_session(arguments, structured, error))
+			return false;
+	} else if (name == QStringLiteral("load_session")) {
+		if (!load_session(arguments, structured, error))
 			return false;
 	} else if (name == QStringLiteral("query_annotations")) {
 		if (!query_annotations(arguments, structured, error))
@@ -329,51 +268,78 @@ bool Tools::call_tool(const QString& name, const QJsonObject& arguments,
 	return true;
 }
 
-QJsonObject Tools::list_sessions() const
+bool Tools::get_session(const QJsonObject& arguments,
+	QJsonObject& result, QString& error) const
 {
-	QJsonArray sessions;
-
-	for (const SessionRegistry::Entry& entry : sessions_.entries()) {
-		const std::shared_ptr<Session>& session = entry.session;
-		QJsonObject item;
-		item.insert(QStringLiteral("session_id"), QString::number(entry.id));
-		item.insert(QStringLiteral("generation"), QString::number(entry.generation));
-		item.insert(QStringLiteral("name"), session->name());
-		item.insert(QStringLiteral("active"), entry.active);
-		item.insert(QStringLiteral("capture_state"),
-			capture_state_name(session->get_capture_state()));
-		item.insert(QStringLiteral("samplerate"), session->get_samplerate());
-
-		const std::shared_ptr<devices::Device> device = session->device();
-		if (device)
-			item.insert(QStringLiteral("device_name"),
-				QString::fromStdString(device->full_name()));
-
-		if (!session->save_path().isEmpty())
-			item.insert(QStringLiteral("file_path"), session->save_path());
-
-		QJsonArray segments;
-		const uint32_t highest_segment = session->get_highest_segment_id();
-		for (uint32_t id = 0; id <= highest_segment; id++) {
-			QJsonObject segment;
-			segment.insert(QStringLiteral("segment_id"), static_cast<int>(id));
-			segment.insert(QStringLiteral("sample_count"),
-				QString::number(session->get_segment_sample_count(id)));
-			segments.append(segment);
+	static const QSet<QString> allowed = {
+		QStringLiteral("session_id"), QStringLiteral("all_sessions")};
+	for (auto it = arguments.begin(); it != arguments.end(); ++it)
+		if (!allowed.contains(it.key())) {
+			error = QStringLiteral("get_session does not accept %1").arg(it.key());
+			return false;
 		}
-		item.insert(QStringLiteral("segments"), segments);
+	if (arguments.contains(QStringLiteral("all_sessions")) &&
+		!arguments.value(QStringLiteral("all_sessions")).isBool()) {
+		error = QStringLiteral("all_sessions must be a boolean");
+		return false;
+	}
 
-		QJsonArray decode_signals;
+	SessionRegistry::Entry entry;
+	if (!resolve_session(sessions_, arguments, entry, error))
+		return false;
+	const std::shared_ptr<Session>& session = entry.session;
+	result.insert(QStringLiteral("session_id"), QString::number(entry.id));
+	result.insert(QStringLiteral("generation"), QString::number(entry.generation));
+	result.insert(QStringLiteral("name"), session->name());
+	result.insert(QStringLiteral("active"), entry.active);
+	result.insert(QStringLiteral("capture_state"),
+		capture_state_name(session->get_capture_state()));
+	result.insert(QStringLiteral("samplerate"), session->get_samplerate());
+	result.insert(QStringLiteral("data_saved"), session->data_saved());
+	if (!session->save_path().isEmpty())
+		result.insert(QStringLiteral("file_path"), session->save_path());
+
+	const std::shared_ptr<devices::Device> device = session->device();
+	if (device) {
+		result.insert(QStringLiteral("device_name"),
+			QString::fromStdString(device->full_name()));
+		if (const std::shared_ptr<sigrok::Device> sr_device = device->device()) {
+			QJsonObject config;
+			auto read_config = [&](const QString& name, const sigrok::ConfigKey *key) {
+				try {
+					if (sr_device->config_check(key, sigrok::Capability::GET))
+						config.insert(name, QString::number(device->read_config<uint64_t>(key)));
+				} catch (const sigrok::Error&) {
+				}
+			};
+			read_config(QStringLiteral("samplerate"), sigrok::ConfigKey::SAMPLERATE);
+			read_config(QStringLiteral("num_samples"), sigrok::ConfigKey::LIMIT_SAMPLES);
+			read_config(QStringLiteral("capture_ratio"), sigrok::ConfigKey::CAPTURE_RATIO);
+			result.insert(QStringLiteral("config"), config);
+		}
+	}
+
+	QJsonArray segments;
+	const uint32_t highest_segment = session->get_highest_segment_id();
+	for (uint32_t id = 0; id <= highest_segment; id++)
+		segments.append(QJsonObject{
+			{QStringLiteral("segment_id"), static_cast<int>(id)},
+			{QStringLiteral("sample_count"),
+				QString::number(session->get_segment_sample_count(id))}});
+	result.insert(QStringLiteral("segments"), segments);
+
+	std::shared_ptr<sigrok::Trigger> trigger;
+	if (session->session())
+		trigger = session->session()->trigger();
+	QJsonArray channels;
+	QJsonArray decode_signals;
 #ifdef ENABLE_DECODE
-		uint32_t decode_index = 0;
-		for (const auto& base : session->signalbases()) {
-			if (!base->is_decode_signal())
-				continue;
+	uint32_t decode_index = 0;
+#endif
+	for (const auto& base : session->signalbases()) {
+		if (base->is_decode_signal()) {
+#ifdef ENABLE_DECODE
 			const auto signal = std::dynamic_pointer_cast<data::DecodeSignal>(base);
-			QJsonObject decode_item;
-			decode_item.insert(QStringLiteral("decode_signal_id"),
-				QString::number(decode_index++));
-			decode_item.insert(QStringLiteral("name"), signal->display_name());
 			QJsonArray decoders;
 			for (const auto& decoder : signal->decoder_stack()) {
 				const srd_decoder* srd = decoder->get_srd_decoder();
@@ -382,27 +348,70 @@ QJsonObject Tools::list_sessions() const
 					{QStringLiteral("name"), QString::fromUtf8(srd->name)},
 					{QStringLiteral("stack_level"), decoder->get_stack_level()}});
 			}
-			decode_item.insert(QStringLiteral("decoders"), decoders);
-			decode_signals.append(decode_item);
-		}
+			decode_signals.append(QJsonObject{
+				{QStringLiteral("decode_signal_id"), QString::number(decode_index++)},
+				{QStringLiteral("name"), signal->display_name()},
+				{QStringLiteral("decoders"), decoders}});
 #endif
-		item.insert(QStringLiteral("decode_signals"), decode_signals);
-		sessions.append(item);
-	}
+			continue;
+		}
 
-	QJsonObject result;
-	result.insert(QStringLiteral("sessions"), sessions);
-	return result;
+		QJsonObject channel{
+			{QStringLiteral("name"), base->name()},
+			{QStringLiteral("internal_name"), base->internal_name()},
+			{QStringLiteral("enabled"), base->enabled()},
+			{QStringLiteral("color"), base->color().name()},
+			{QStringLiteral("index"), static_cast<int>(base->index())}};
+		const bool logic = base->type() == data::SignalBase::LogicChannel;
+		channel.insert(QStringLiteral("type"), logic ? QStringLiteral("logic") :
+			base->type() == data::SignalBase::AnalogChannel ? QStringLiteral("analog") :
+			QStringLiteral("other"));
+		if (logic) {
+			channel.insert(QStringLiteral("bit"), static_cast<int>(base->logic_bit_index()));
+			const sigrok::TriggerMatchType *match_type = nullptr;
+			if (trigger)
+				for (const auto& stage : trigger->stages())
+					for (const auto& match : stage->matches())
+						if (match->channel() == base->channel())
+							match_type = match->type();
+			channel.insert(QStringLiteral("trigger"), trigger_name(match_type));
+		}
+		channels.append(channel);
+	}
+	result.insert(QStringLiteral("channels"), channels);
+	result.insert(QStringLiteral("decode_signals"), decode_signals);
+
+	QString view_error;
+	if (const auto view = trace_view(entry, view_error))
+		result.insert(QStringLiteral("view"), view_context(entry, view));
+
+	if (arguments.value(QStringLiteral("all_sessions")).toBool(false)) {
+		QJsonArray open_sessions;
+		for (const SessionRegistry::Entry& other : sessions_.entries())
+			open_sessions.append(QJsonObject{
+				{QStringLiteral("session_id"), QString::number(other.id)},
+				{QStringLiteral("generation"), QString::number(other.generation)},
+				{QStringLiteral("name"), other.session->name()},
+				{QStringLiteral("active"), other.active},
+				{QStringLiteral("capture_state"),
+					capture_state_name(other.session->get_capture_state())}});
+		result.insert(QStringLiteral("open_sessions"), open_sessions);
+	}
+	return true;
 }
 
-bool Tools::get_view_context(const QJsonObject& arguments,
+bool Tools::get_capture(const QJsonObject& arguments,
 	QJsonObject& result, QString& error) const
 {
-	if (arguments.size() > 1 ||
-		(arguments.size() == 1 && !arguments.contains(QStringLiteral("session_id")))) {
-		error = QStringLiteral("get_view_context only accepts session_id");
-		return false;
-	}
+	static const QSet<QString> allowed = {
+		QStringLiteral("session_id"), QStringLiteral("segment_id"),
+		QStringLiteral("start_sample"), QStringLiteral("end_sample"),
+		QStringLiteral("channels"), QStringLiteral("mode"), QStringLiteral("limit")};
+	for (auto it = arguments.begin(); it != arguments.end(); ++it)
+		if (!allowed.contains(it.key())) {
+			error = QStringLiteral("get_capture does not accept %1").arg(it.key());
+			return false;
+		}
 
 	SessionRegistry::Entry entry;
 	if (!resolve_session(sessions_, arguments, entry, error))
@@ -410,7 +419,481 @@ bool Tools::get_view_context(const QJsonObject& arguments,
 	const auto view = trace_view(entry, error);
 	if (!view)
 		return false;
-	result = view_context(entry, view);
+	const uint32_t segment_id = arguments.contains(QStringLiteral("segment_id")) ?
+		static_cast<uint32_t>(arguments.value(QStringLiteral("segment_id")).toInt(-1)) :
+		view->current_segment();
+	if (segment_id > entry.session->get_highest_segment_id()) {
+		error = QStringLiteral("Unknown segment ID: %1").arg(segment_id);
+		return false;
+	}
+
+	const uint64_t sample_count = entry.session->get_segment_sample_count(segment_id);
+	uint64_t start = 0;
+	uint64_t end = sample_count;
+	const bool has_start = arguments.contains(QStringLiteral("start_sample"));
+	const bool has_end = arguments.contains(QStringLiteral("end_sample"));
+	if (has_start != has_end) {
+		error = QStringLiteral("start_sample and end_sample must be supplied together");
+		return false;
+	}
+	if (has_start && (!sample_value(arguments, QStringLiteral("start_sample"), start, error) ||
+		!sample_value(arguments, QStringLiteral("end_sample"), end, error)))
+		return false;
+	if (start > end || end > sample_count) {
+		error = QStringLiteral("Capture range %1..%2 is outside segment 0..%3")
+			.arg(start).arg(end).arg(sample_count);
+		return false;
+	}
+
+	const QString mode = arguments.value(QStringLiteral("mode")).toString(QStringLiteral("edges"));
+	if (mode != QStringLiteral("edges") && mode != QStringLiteral("bits")) {
+		error = QStringLiteral("mode must be edges or bits");
+		return false;
+	}
+	const int default_limit = mode == QStringLiteral("bits") ? 1000000 : 10000;
+	const int limit = arguments.value(QStringLiteral("limit")).toInt(default_limit);
+	if (limit < 1 || limit > 1000000) {
+		error = QStringLiteral("limit must be between 1 and 1000000");
+		return false;
+	}
+	if (mode == QStringLiteral("bits") && end - start > static_cast<uint64_t>(limit)) {
+		error = QStringLiteral("Requested %1 samples; limit is %2")
+			.arg(end - start).arg(limit);
+		return false;
+	}
+
+	QSet<QString> wanted;
+	if (arguments.contains(QStringLiteral("channels"))) {
+		if (!arguments.value(QStringLiteral("channels")).isArray()) {
+			error = QStringLiteral("channels must be an array of names");
+			return false;
+		}
+		for (const QJsonValue& value : arguments.value(QStringLiteral("channels")).toArray())
+			wanted.insert(value.toString());
+	}
+
+	QJsonArray channels;
+	std::map<const data::LogicSegment*, QByteArray> raw_cache;
+	for (const auto& base : entry.session->signalbases()) {
+		if (base->type() != data::SignalBase::LogicChannel || !base->enabled() ||
+			(!wanted.isEmpty() && !wanted.contains(base->name())))
+			continue;
+		const auto logic = base->logic_data();
+		if (!logic || segment_id >= logic->logic_segments().size())
+			continue;
+		const auto segment = logic->logic_segments().at(segment_id);
+		QJsonObject channel{
+			{QStringLiteral("name"), base->name()},
+			{QStringLiteral("index"), static_cast<int>(base->index())},
+			{QStringLiteral("bit"), static_cast<int>(base->logic_bit_index())}};
+
+		if (start == end) {
+			if (mode == QStringLiteral("edges")) {
+				channel.insert(QStringLiteral("initial"), false);
+				channel.insert(QStringLiteral("edges"), QJsonArray());
+			} else
+				channel.insert(QStringLiteral("bits_base64"), QString());
+			channels.append(channel);
+			continue;
+		}
+
+		if (mode == QStringLiteral("edges")) {
+			QByteArray initial_sample(static_cast<int>(segment->unit_size()), '\0');
+			segment->get_samples(static_cast<int64_t>(start),
+				static_cast<int64_t>(start + 1),
+				reinterpret_cast<uint8_t*>(initial_sample.data()));
+			const unsigned int bit = base->logic_bit_index();
+			const bool initial = (static_cast<uint8_t>(initial_sample.at(bit / 8)) &
+				static_cast<uint8_t>(1U << (bit % 8))) != 0;
+			channel.insert(QStringLiteral("initial"), initial);
+			QJsonArray edges;
+			uint64_t position = start;
+			bool truncated = false;
+			while (position < end) {
+				std::vector<data::LogicSegment::EdgePair> next;
+				segment->get_subsampled_edges(next, position, end, 1.0f,
+					static_cast<int>(bit), true);
+				if (next.empty() || next.front().first < 0 ||
+					static_cast<uint64_t>(next.front().first) >= end)
+					break;
+				const uint64_t edge_sample = static_cast<uint64_t>(next.front().first);
+				if (edge_sample <= position) {
+					position++;
+					continue;
+				}
+				if (edges.size() >= limit) {
+					truncated = true;
+					break;
+				}
+				edges.append(QJsonArray{QString::number(edge_sample), next.front().second});
+				position = edge_sample;
+			}
+			channel.insert(QStringLiteral("edges"), edges);
+			channel.insert(QStringLiteral("truncated"), truncated);
+		} else {
+			QByteArray& raw = raw_cache[segment.get()];
+			if (raw.isEmpty()) {
+				raw.resize(static_cast<int>((end - start) * segment->unit_size()));
+				segment->get_samples(static_cast<int64_t>(start), static_cast<int64_t>(end),
+					reinterpret_cast<uint8_t*>(raw.data()));
+			}
+			QByteArray packed(static_cast<int>(((end - start) + 7) / 8), '\0');
+			const unsigned int bit = base->logic_bit_index();
+			for (uint64_t index = 0; index < end - start; index++)
+				if ((static_cast<uint8_t>(raw.at(static_cast<int>(
+					index * segment->unit_size() + bit / 8))) & (1U << (bit % 8))) != 0)
+					packed[static_cast<int>(index / 8)] = static_cast<char>(
+						static_cast<uint8_t>(packed.at(static_cast<int>(index / 8))) |
+						(1U << (index % 8)));
+			channel.insert(QStringLiteral("bits_base64"), QString::fromLatin1(packed.toBase64()));
+		}
+		channels.append(channel);
+	}
+
+	result.insert(QStringLiteral("session_id"), QString::number(entry.id));
+	result.insert(QStringLiteral("generation"), QString::number(entry.generation));
+	result.insert(QStringLiteral("segment_id"), static_cast<int>(segment_id));
+	result.insert(QStringLiteral("samplerate"), entry.session->get_samplerate());
+	result.insert(QStringLiteral("start_sample"), QString::number(start));
+	result.insert(QStringLiteral("end_sample"), QString::number(end));
+	result.insert(QStringLiteral("mode"), mode);
+	result.insert(QStringLiteral("channels"), channels);
+	return true;
+}
+
+bool Tools::start_capture(const QJsonObject& arguments,
+	QJsonObject& result, QString& error) const
+{
+	static const QSet<QString> allowed = {
+		QStringLiteral("session_id"), QStringLiteral("generation"),
+		QStringLiteral("samplerate"), QStringLiteral("num_samples"),
+		QStringLiteral("wait"), QStringLiteral("timeout_ms")};
+	for (auto it = arguments.begin(); it != arguments.end(); ++it)
+		if (!allowed.contains(it.key())) {
+			error = QStringLiteral("start_capture does not accept %1").arg(it.key());
+			return false;
+		}
+	SessionRegistry::Entry entry;
+	if (!resolve_session(sessions_, arguments, entry, error) ||
+		!require_generation(entry, arguments, error))
+		return false;
+	if (entry.session->get_capture_state() != Session::Stopped) {
+		error = QStringLiteral("A capture is already running");
+		return false;
+	}
+	const auto device = entry.session->device();
+	const auto sr_device = device ? device->device() : nullptr;
+	if (!sr_device) {
+		error = QStringLiteral("The active session has no device");
+		return false;
+	}
+	try {
+		for (const auto& setting : std::vector<std::pair<QString, const sigrok::ConfigKey*>>{
+			{QStringLiteral("samplerate"), sigrok::ConfigKey::SAMPLERATE},
+			{QStringLiteral("num_samples"), sigrok::ConfigKey::LIMIT_SAMPLES}}) {
+			if (!arguments.contains(setting.first))
+				continue;
+			uint64_t value;
+			if (!sample_value(arguments, setting.first, value, error))
+				return false;
+			if (!sr_device->config_check(setting.second, sigrok::Capability::SET)) {
+				error = QStringLiteral("Device does not support setting %1").arg(setting.first);
+				return false;
+			}
+			sr_device->config_set(setting.second, Glib::Variant<guint64>::create(value));
+		}
+	} catch (const sigrok::Error& exception) {
+		error = QString::fromUtf8(exception.what());
+		return false;
+	}
+	if (entry.session->main_bar())
+		entry.session->main_bar()->refresh_config_selectors();
+
+	const auto capture_error_mutex = std::make_shared<std::mutex>();
+	const auto capture_error = std::make_shared<QString>();
+	entry.session->start_capture([capture_error_mutex, capture_error](const QString message) {
+		std::lock_guard<std::mutex> lock(*capture_error_mutex);
+		*capture_error = message;
+	});
+	if (!arguments.value(QStringLiteral("wait")).toBool(true)) {
+		result.insert(QStringLiteral("state"), QStringLiteral("starting"));
+		return true;
+	}
+
+	const int timeout_ms = arguments.value(QStringLiteral("timeout_ms")).toInt(30000);
+	QElapsedTimer timer;
+	timer.start();
+	bool observed_running = false;
+	while (timer.elapsed() < timeout_ms) {
+		QCoreApplication::processEvents(QEventLoop::ExcludeSocketNotifiers, 10);
+		{
+			std::lock_guard<std::mutex> lock(*capture_error_mutex);
+			if (!capture_error->isEmpty()) {
+				error = *capture_error;
+				return false;
+			}
+		}
+		const Session::capture_state state = entry.session->get_capture_state();
+		observed_running |= state != Session::Stopped;
+		const uint32_t latest_segment = entry.session->get_highest_segment_id();
+		if (state == Session::Stopped && (observed_running ||
+			entry.session->get_segment_sample_count(latest_segment) > 0))
+			break;
+		QThread::msleep(1);
+	}
+	if (entry.session->get_capture_state() != Session::Stopped ||
+		entry.session->get_segment_sample_count(entry.session->get_highest_segment_id()) == 0) {
+		error = QStringLiteral("Capture did not finish within timeout_ms");
+		return false;
+	}
+	result.insert(QStringLiteral("state"), QStringLiteral("stopped"));
+	result.insert(QStringLiteral("segment_id"),
+		static_cast<int>(entry.session->get_highest_segment_id()));
+	result.insert(QStringLiteral("sample_count"), QString::number(
+		entry.session->get_segment_sample_count(entry.session->get_highest_segment_id())));
+	return true;
+}
+
+bool Tools::set_session(const QJsonObject& arguments,
+	QJsonObject& result, QString& error) const
+{
+	static const QSet<QString> allowed = {
+		QStringLiteral("session_id"), QStringLiteral("generation"),
+		QStringLiteral("samplerate"), QStringLiteral("num_samples"),
+		QStringLiteral("capture_ratio"), QStringLiteral("channels")};
+	for (auto it = arguments.begin(); it != arguments.end(); ++it)
+		if (!allowed.contains(it.key())) {
+			error = QStringLiteral("set_session does not accept %1").arg(it.key());
+			return false;
+		}
+	SessionRegistry::Entry entry;
+	if (!resolve_session(sessions_, arguments, entry, error) ||
+		!require_generation(entry, arguments, error))
+		return false;
+	if (entry.session->get_capture_state() != Session::Stopped) {
+		error = QStringLiteral("Cannot configure a running capture");
+		return false;
+	}
+
+	QJsonObject applied;
+	QJsonArray warnings;
+	bool changed = false;
+	const auto device = entry.session->device();
+	const auto sr_device = device ? device->device() : nullptr;
+	for (const auto& setting : std::vector<std::pair<QString, const sigrok::ConfigKey*>>{
+		{QStringLiteral("samplerate"), sigrok::ConfigKey::SAMPLERATE},
+		{QStringLiteral("num_samples"), sigrok::ConfigKey::LIMIT_SAMPLES},
+		{QStringLiteral("capture_ratio"), sigrok::ConfigKey::CAPTURE_RATIO}}) {
+		if (!arguments.contains(setting.first))
+			continue;
+		uint64_t value = 0;
+		if (setting.first == QStringLiteral("capture_ratio")) {
+			const int ratio = arguments.value(setting.first).toInt(-1);
+			if (ratio < 0 || ratio > 100) {
+				error = QStringLiteral("capture_ratio must be between 0 and 100");
+				return false;
+			}
+			value = static_cast<uint64_t>(ratio);
+		}
+		else if (!sample_value(arguments, setting.first, value, error))
+			return false;
+		try {
+			if (!sr_device ||
+				!sr_device->config_check(setting.second, sigrok::Capability::SET)) {
+				warnings.append(QStringLiteral("%1 is not supported").arg(setting.first));
+				continue;
+			}
+			sr_device->config_set(setting.second, Glib::Variant<guint64>::create(value));
+			applied.insert(setting.first, QString::number(value));
+			changed = true;
+		} catch (const sigrok::Error& exception) {
+			warnings.append(QStringLiteral("%1: %2").arg(setting.first,
+				QString::fromUtf8(exception.what())));
+		}
+	}
+	if (entry.session->main_bar())
+		entry.session->main_bar()->refresh_config_selectors();
+
+	QJsonArray channel_results;
+	if (arguments.contains(QStringLiteral("channels"))) {
+		if (!arguments.value(QStringLiteral("channels")).isArray()) {
+			error = QStringLiteral("channels must be an array");
+			return false;
+		}
+		const auto view = std::dynamic_pointer_cast<views::trace::View>(entry.session->main_view());
+		for (const QJsonValue& value : arguments.value(QStringLiteral("channels")).toArray()) {
+			const QJsonObject update = value.toObject();
+			const QString name = update.value(QStringLiteral("name")).toString();
+			QJsonObject channel_result{{QStringLiteral("name"), name}};
+			std::shared_ptr<data::SignalBase> base;
+			for (const auto& candidate : entry.session->signalbases())
+				if (candidate->name() == name || candidate->internal_name() == name) {
+					base = candidate;
+					break;
+				}
+			if (!base) {
+				channel_result.insert(QStringLiteral("error"), QStringLiteral("not_found"));
+				channel_results.append(channel_result);
+				continue;
+			}
+			if (update.contains(QStringLiteral("label"))) {
+				base->set_name(update.value(QStringLiteral("label")).toString());
+				channel_result.insert(QStringLiteral("label"), base->name());
+				changed = true;
+			}
+			if (update.contains(QStringLiteral("color"))) {
+				const QColor color(update.value(QStringLiteral("color")).toString());
+				if (color.isValid()) {
+					base->set_color(color);
+					channel_result.insert(QStringLiteral("color"), color.name());
+					changed = true;
+				} else
+					channel_result.insert(QStringLiteral("color_error"), QStringLiteral("invalid_color"));
+			}
+			if (update.contains(QStringLiteral("trigger"))) {
+				bool valid = false;
+				const sigrok::TriggerMatchType *type = trigger_type(
+					update.value(QStringLiteral("trigger")).toString(), valid);
+				std::shared_ptr<views::trace::LogicSignal> logic_signal;
+				if (view)
+					for (const auto& signal : view->list_by_type<views::trace::LogicSignal>())
+						if (signal->base() == base)
+							logic_signal = signal;
+				if (!valid)
+					channel_result.insert(QStringLiteral("trigger_error"), QStringLiteral("unknown_type"));
+				else if (!logic_signal)
+					channel_result.insert(QStringLiteral("trigger_error"), QStringLiteral("not_logic"));
+				else if (!logic_signal->set_trigger_match(type))
+					channel_result.insert(QStringLiteral("trigger_error"), QStringLiteral("unsupported"));
+				else
+					channel_result.insert(QStringLiteral("trigger"), trigger_name(type));
+				if (valid && logic_signal && !channel_result.contains(
+					QStringLiteral("trigger_error")))
+					changed = true;
+			}
+			channel_results.append(channel_result);
+		}
+	}
+
+	if (changed)
+		sessions_.changed(entry.session.get());
+	SessionRegistry::Entry updated;
+	sessions_.resolve(entry.id, updated);
+	result.insert(QStringLiteral("generation"), QString::number(updated.generation));
+	result.insert(QStringLiteral("applied"), applied);
+	result.insert(QStringLiteral("channels"), channel_results);
+	if (!warnings.isEmpty())
+		result.insert(QStringLiteral("warnings"), warnings);
+	return true;
+}
+
+bool Tools::save_session(const QJsonObject& arguments,
+	QJsonObject& result, QString& error) const
+{
+	static const QSet<QString> allowed = {
+		QStringLiteral("session_id"), QStringLiteral("generation"),
+		QStringLiteral("path"), QStringLiteral("overwrite")};
+	for (auto it = arguments.begin(); it != arguments.end(); ++it)
+		if (!allowed.contains(it.key())) {
+			error = QStringLiteral("save_session does not accept %1").arg(it.key());
+			return false;
+		}
+	SessionRegistry::Entry entry;
+	if (!resolve_session(sessions_, arguments, entry, error) ||
+		!require_generation(entry, arguments, error))
+		return false;
+	if (entry.session->get_capture_state() != Session::Stopped) {
+		error = QStringLiteral("Cannot save while capture is running");
+		return false;
+	}
+	const QString requested_path = arguments.value(QStringLiteral("path")).toString();
+	if (requested_path.isEmpty() || !QFileInfo(requested_path).isAbsolute()) {
+		error = QStringLiteral("path must be absolute");
+		return false;
+	}
+	const QString path = QFileInfo(requested_path).absoluteFilePath();
+	if (QFileInfo::exists(path) && !arguments.value(QStringLiteral("overwrite")).toBool(false)) {
+		error = QStringLiteral("Refusing to overwrite existing file: %1").arg(path);
+		return false;
+	}
+	std::shared_ptr<sigrok::OutputFormat> format;
+	try {
+		format = entry.session->device_manager().context()->output_formats().at("srzip");
+	} catch (...) {
+		error = QStringLiteral("Native srzip output is unavailable");
+		return false;
+	}
+	StoreSession store(path.toStdString(), format,
+		std::map<std::string, Glib::VariantBase>(), std::make_pair(0ULL, 0ULL),
+		*entry.session);
+	std::atomic<bool> completed(false);
+	QObject::connect(&store, &StoreSession::store_successful,
+		&store, [&completed]() { completed = true; }, Qt::DirectConnection);
+	if (!store.start()) {
+		error = store.error();
+		return false;
+	}
+	while (!completed.load()) {
+		QCoreApplication::processEvents(QEventLoop::ExcludeSocketNotifiers, 10);
+		QThread::msleep(1);
+	}
+	store.wait();
+	if (!store.error().isEmpty()) {
+		error = store.error();
+		return false;
+	}
+	entry.session->set_save_path(QFileInfo(path).absolutePath());
+	entry.session->set_name(QFileInfo(path).fileName());
+	QMetaObject::invokeMethod(entry.session.get(), "on_data_saved", Qt::DirectConnection);
+	SessionRegistry::Entry updated;
+	sessions_.resolve(entry.id, updated);
+	result.insert(QStringLiteral("path"), path);
+	result.insert(QStringLiteral("bytes"), QString::number(QFileInfo(path).size()));
+	result.insert(QStringLiteral("generation"), QString::number(updated.generation));
+	return true;
+}
+
+bool Tools::load_session(const QJsonObject& arguments,
+	QJsonObject& result, QString& error) const
+{
+	static const QSet<QString> allowed = {
+		QStringLiteral("session_id"), QStringLiteral("generation"),
+		QStringLiteral("path"), QStringLiteral("discard_unsaved")};
+	for (auto it = arguments.begin(); it != arguments.end(); ++it)
+		if (!allowed.contains(it.key())) {
+			error = QStringLiteral("load_session does not accept %1").arg(it.key());
+			return false;
+		}
+	SessionRegistry::Entry entry;
+	if (!resolve_session(sessions_, arguments, entry, error) ||
+		!require_generation(entry, arguments, error))
+		return false;
+	if (entry.session->get_capture_state() != Session::Stopped) {
+		error = QStringLiteral("Cannot load while capture is running");
+		return false;
+	}
+	if (!entry.session->data_saved() &&
+		!arguments.value(QStringLiteral("discard_unsaved")).toBool(false)) {
+		error = QStringLiteral("Session has unsaved capture data; set discard_unsaved=true to replace it");
+		return false;
+	}
+	const QFileInfo file(arguments.value(QStringLiteral("path")).toString());
+	if (!file.isAbsolute() || !file.isFile()) {
+		error = QStringLiteral("path must name an existing absolute file");
+		return false;
+	}
+	try {
+		entry.session->load_file(file.absoluteFilePath());
+	} catch (const sigrok::Error& exception) {
+		error = QString::fromUtf8(exception.what());
+		return false;
+	}
+	sessions_.changed(entry.session.get());
+	SessionRegistry::Entry updated;
+	sessions_.resolve(entry.id, updated);
+	result.insert(QStringLiteral("accepted"), true);
+	result.insert(QStringLiteral("path"), file.absoluteFilePath());
+	result.insert(QStringLiteral("generation"), QString::number(updated.generation));
 	return true;
 }
 

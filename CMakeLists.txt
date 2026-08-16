@@ -504,6 +504,7 @@ endif()
 if(ENABLE_MCP)
 	list(APPEND pulseview_SOURCES
 		pv/mcp/connection.cpp
+		pv/mcp/catalog.cpp
 		pv/mcp/protocol.cpp
 		pv/mcp/server.cpp
 		pv/mcp/sessionregistry.cpp
@@ -641,7 +642,7 @@ add_executable(${PROJECT_NAME} ${INPUT_FILES_LIST})
 target_link_libraries(${PROJECT_NAME} ${PULSEVIEW_LINK_LIBS})
 
 if(ENABLE_MCP AND UNIX)
-	add_executable(pulseview-mcp tools/pulseview-mcp/main.cpp)
+	add_executable(pulseview-mcp tools/pulseview-mcp/main.cpp pv/mcp/catalog.cpp)
 	target_link_libraries(pulseview-mcp ${QT_LIBRARIES})
 endif()
 

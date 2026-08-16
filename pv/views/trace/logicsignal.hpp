@@ -106,6 +106,8 @@ public:
 	 */
 	virtual vector<data::LogicSegment::EdgePair> get_nearest_level_changes(uint64_t sample_pos);
 
+	bool set_trigger_match(const sigrok::TriggerMatchType *type);
+
 protected:
 	void paint_caps(QPainter &p, QLineF *const lines,
 		vector< pair<int64_t, bool> > &edges,

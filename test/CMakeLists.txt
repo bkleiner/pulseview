@@ -206,6 +206,7 @@ endif()
 if(ENABLE_MCP)
 	list(APPEND pulseview_TEST_SOURCES
 		${PROJECT_SOURCE_DIR}/pv/mcp/connection.cpp
+		${PROJECT_SOURCE_DIR}/pv/mcp/catalog.cpp
 		${PROJECT_SOURCE_DIR}/pv/mcp/protocol.cpp
 		${PROJECT_SOURCE_DIR}/pv/mcp/server.cpp
 		${PROJECT_SOURCE_DIR}/pv/mcp/sessionregistry.cpp

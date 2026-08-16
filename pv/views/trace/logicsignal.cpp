@@ -925,6 +925,19 @@ void LogicSignal::modify_trigger()
 		owner_->row_item_appearance_changed(false, true);
 }
 
+bool LogicSignal::set_trigger_match(const TriggerMatchType *type)
+{
+	if (type) {
+		const vector<int32_t> supported = get_trigger_types();
+		if (find(supported.begin(), supported.end(), type->id()) == supported.end())
+			return false;
+	}
+
+	trigger_match_ = type;
+	modify_trigger();
+	return true;
+}
+
 const QIcon* LogicSignal::get_icon(const char *path)
 {
 	if (!icon_cache_.contains(path)) {

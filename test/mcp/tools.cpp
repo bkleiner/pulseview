@@ -20,23 +20,25 @@ BOOST_AUTO_TEST_CASE(tool_surface)
 	pv::mcp::SessionRegistry sessions;
 	pv::mcp::Tools tools(sessions);
 	const QJsonArray listed = tools.list_tools();
-	BOOST_REQUIRE_EQUAL(listed.size(), 5);
+	BOOST_REQUIRE_EQUAL(listed.size(), 9);
 
-	const QStringList expected = {QStringLiteral("list_sessions"),
-		QStringLiteral("get_view_context"), QStringLiteral("query_annotations"),
+	const QStringList expected = {QStringLiteral("get_session"),
+		QStringLiteral("get_capture"), QStringLiteral("start_capture"),
+		QStringLiteral("set_session"), QStringLiteral("save_session"),
+		QStringLiteral("load_session"), QStringLiteral("query_annotations"),
 		QStringLiteral("set_cursors"), QStringLiteral("zoom_to_range")};
 	for (int index = 0; index < listed.size(); index++)
 		BOOST_CHECK_EQUAL(listed.at(index).toObject().value(QStringLiteral("name"))
 			.toString(), expected.at(index));
 
-	BOOST_CHECK(listed.at(2).toObject().value(QStringLiteral("annotations"))
+	BOOST_CHECK(listed.at(6).toObject().value(QStringLiteral("annotations"))
 		.toObject().value(QStringLiteral("readOnlyHint")).toBool());
-	BOOST_CHECK(!listed.at(3).toObject().value(QStringLiteral("annotations"))
+	BOOST_CHECK(!listed.at(2).toObject().value(QStringLiteral("annotations"))
 		.toObject().value(QStringLiteral("readOnlyHint")).toBool());
-	BOOST_CHECK(!listed.at(4).toObject().value(QStringLiteral("annotations"))
+	BOOST_CHECK(!listed.at(7).toObject().value(QStringLiteral("annotations"))
 		.toObject().value(QStringLiteral("readOnlyHint")).toBool());
 
-	const QJsonObject query_tool = listed.at(2).toObject();
+	const QJsonObject query_tool = listed.at(6).toObject();
 	const QJsonObject query_properties = query_tool.value(QStringLiteral("inputSchema"))
 		.toObject().value(QStringLiteral("properties")).toObject();
 	BOOST_CHECK(query_properties.contains(QStringLiteral("continuation_token")));
