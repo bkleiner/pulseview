@@ -65,6 +65,34 @@ BOOST_AUTO_TEST_CASE(SurroundingEdgesRespectSearchRadius)
 	BOOST_CHECK_EQUAL(edges.back().first, 80);
 }
 
+BOOST_AUTO_TEST_CASE(SurroundingEdgesSupportPulsePeriodLookup)
+{
+	Logic logic(1);
+	shared_ptr<LogicSegment> segment =
+		make_shared<LogicSegment>(logic, 0, 1, 1);
+	logic.push_segment(segment);
+
+	vector<uint8_t> samples(180, 0);
+	std::fill(samples.begin() + 20, samples.begin() + 80, 1);
+	std::fill(samples.begin() + 100, samples.begin() + 160, 1);
+	segment->append_payload(samples.data(), samples.size());
+
+	vector<LogicSegment::EdgePair> pulse_edges;
+	segment->get_surrounding_edges(pulse_edges, 50, 1, 0);
+	BOOST_REQUIRE_EQUAL(pulse_edges.size(), 2);
+	BOOST_CHECK_EQUAL(pulse_edges.front().first, 20);
+	BOOST_CHECK_EQUAL(pulse_edges.back().first, 80);
+
+	vector<LogicSegment::EdgePair> following_edges;
+	segment->get_surrounding_edges(following_edges,
+		pulse_edges.back().first + 1, 1, 0);
+	BOOST_REQUIRE_EQUAL(following_edges.size(), 2);
+	BOOST_CHECK_EQUAL(following_edges.front().first, 80);
+	BOOST_CHECK_EQUAL(following_edges.back().first, 100);
+	BOOST_CHECK_EQUAL(following_edges.back().second,
+		pulse_edges.front().second);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0

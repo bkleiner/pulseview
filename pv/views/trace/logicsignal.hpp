@@ -24,6 +24,7 @@
 #include <QColor>
 #include <QDebug>
 #include <QSpinBox>
+#include <QStringList>
 
 #include "signal.hpp"
 
@@ -142,6 +143,13 @@ private:
 	void draw_markers(QPainter &p, vector<QPointF> &marker_points) const;
 	QString time_to_string(double time) const;
 	QString freq_to_string(double freq) const;
+	void paint_hover_measurement(QPainter &p, const ViewItemPaintParams &pp,
+		double samplerate) const;
+	void paint_measurement_ruler(QPainter &p, const ViewItemPaintParams &pp,
+		double start_x, double end_x, double y, double guide_y,
+		const QString &text) const;
+	void paint_hover_metrics(QPainter &p, const ViewItemPaintParams &pp,
+		const QStringList &lines) const;
 	void paint_mouse_text(QPainter &p, const QString &text, int num_lines);
 
 protected:
@@ -175,6 +183,7 @@ private:
 	uint64_t last_end_sample_;
 	uint64_t time_diff_start_sample_;
 	uint64_t time_diff_end_sample_;
+	uint64_t time_diff_period_end_sample_;
 	uint64_t last_click_sample_;
 	uint64_t mouse_hover_sample_;
 	uint64_t edge_count_start_sample_;
@@ -185,6 +194,7 @@ private:
 	QPointF click_point_;
 	QPointF mouse_point_;
 	bool hover_update_;
+	bool time_diff_level_;
 	bool clicked_;
 	bool edge_count_running_;
 	bool time_measurement_running_;

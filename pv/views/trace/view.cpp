@@ -1399,7 +1399,7 @@ void View::update_scroll()
 			extents.second - btm_margin);
 	}
 
-	if (scroll_needs_defaults_) {
+	if (scroll_needs_defaults_ && isVisible()) {
 		set_scroll_default();
 		scroll_needs_defaults_ = false;
 	}
@@ -2031,8 +2031,13 @@ void View::signals_changed()
 	header_->update();
 	viewport_->update();
 
-	if (reset_scrollbar)
-		set_scroll_default();
+	if (reset_scrollbar) {
+		scroll_needs_defaults_ = true;
+		if (isVisible()) {
+			set_scroll_default();
+			scroll_needs_defaults_ = false;
+		}
+	}
 }
 
 void View::capture_state_updated(int state)

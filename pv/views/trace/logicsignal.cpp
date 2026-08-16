@@ -100,9 +100,11 @@ LogicSignal::LogicSignal(pv::Session &session, shared_ptr<data::SignalBase> base
 	trigger_change_(nullptr),
 	time_diff_start_sample_(0),
 	time_diff_end_sample_(0),
+	time_diff_period_end_sample_(0),
 	last_click_sample_(0),
 	mouse_hover_sample_(0),
 	hover_update_(false),
+	time_diff_level_(false),
 	clicked_(false),
 	edge_count_running_(false),
 	time_measurement_running_(false),
@@ -162,7 +164,7 @@ void LogicSignal::restore_settings(std::map<QString, QVariant> settings)
 pair<int, int> LogicSignal::v_extents() const
 {
 	const int signal_margin =
-		QFontMetrics(QApplication::font()).height() / 2;
+		QFontMetrics(QApplication::font()).height() + 8;
 	return make_pair(-signal_height_ - signal_margin, signal_margin);
 }
 
@@ -221,8 +223,26 @@ void LogicSignal::paint_mid(QPainter &p, ViewItemPaintParams &pp)
 			if ((edges.size() == 2) && (edges[0].second != edges[1].second)) {
 				time_diff_start_sample_ = edges[0].first;
 				time_diff_end_sample_ = edges[1].first;
-			} else
+				time_diff_period_end_sample_ = time_diff_end_sample_;
+				time_diff_level_ = edges[0].second;
+
+				// The next edge with the same resulting level completes one period.
+				if (time_diff_end_sample_ < (uint64_t)last_sample) {
+					vector<LogicSegment::EdgePair> next_edges;
+					segment->get_surrounding_edges(next_edges,
+						time_diff_end_sample_ + 1,
+						samples_per_pixel / Oversampling, base_->index());
+					if (!next_edges.empty()) {
+						const LogicSegment::EdgePair &next_edge = next_edges.back();
+						if ((next_edge.first > (int64_t)time_diff_end_sample_) &&
+							(next_edge.second == time_diff_level_))
+							time_diff_period_end_sample_ = next_edge.first;
+					}
+				}
+			} else {
 				time_diff_start_sample_ = time_diff_end_sample_;
+				time_diff_period_end_sample_ = time_diff_end_sample_;
+			}
 		}
 	}
 
@@ -496,6 +516,155 @@ void LogicSignal::paint_mouse_text(QPainter &p, const QString &text, int num_lin
 	p.setPen(current_color);
 }
 
+void LogicSignal::paint_measurement_ruler(QPainter &p,
+	const ViewItemPaintParams &pp,
+	double start_x, double end_x, double y, double guide_y,
+	const QString &text) const
+{
+	const double left = min(start_x, end_x);
+	const double right = max(start_x, end_x);
+	const int arrow_length = 5;
+	const int arrow_half_height = 3;
+	const int padding_x = 4;
+	const int padding_y = 1;
+	const QFontMetrics metrics(QApplication::font());
+	const QSize text_size = metrics.size(Qt::TextSingleLine, text);
+	const QSize label_size(text_size.width() + 2 * padding_x,
+		text_size.height() + 2 * padding_y);
+	const int centered_x = round((left + right - label_size.width()) / 2.0);
+	const int label_x = max(pp.left() + 2,
+		min(centered_x, pp.right() - label_size.width() - 2));
+	const QRect label_rect(QPoint(label_x,
+		round(y - label_size.height() / 2.0)), label_size);
+
+	const QPalette palette = QApplication::palette();
+	QColor ruler_color = palette.color(QPalette::WindowText);
+	QColor guide_color = ruler_color;
+	QColor panel_color = palette.color(QPalette::Shadow);
+	QColor text_color = panel_color.lightness() < 128 ? Qt::white : Qt::black;
+	ruler_color.setAlpha(245);
+	guide_color.setAlpha(155);
+	panel_color.setAlpha(235);
+
+	p.save();
+	p.setPen(QPen(guide_color, 1));
+	p.setBrush(Qt::NoBrush);
+	p.drawLine(QPointF(left, guide_y), QPointF(left, y));
+	p.drawLine(QPointF(right, guide_y), QPointF(right, y));
+	p.setPen(QPen(ruler_color, 1.5));
+	p.setBrush(ruler_color);
+	p.drawLine(QPointF(left, y), QPointF(right, y));
+	p.drawPolygon(QPolygonF({
+		QPointF(left, y),
+		QPointF(left + arrow_length, y - arrow_half_height),
+		QPointF(left + arrow_length, y + arrow_half_height)}));
+	p.drawPolygon(QPolygonF({
+		QPointF(right, y),
+		QPointF(right - arrow_length, y - arrow_half_height),
+		QPointF(right - arrow_length, y + arrow_half_height)}));
+	text_color.setAlpha(110);
+	p.setPen(text_color);
+	p.setBrush(panel_color);
+	p.drawRoundedRect(label_rect, 2, 2);
+	text_color.setAlpha(255);
+	p.setPen(text_color);
+	p.drawText(label_rect, Qt::AlignCenter, text);
+	p.restore();
+}
+
+void LogicSignal::paint_hover_metrics(QPainter &p,
+	const ViewItemPaintParams &pp,
+	const QStringList &lines) const
+{
+	if (lines.empty())
+		return;
+
+	const int padding_x = 7;
+	const int padding_y = 5;
+	const int viewport_margin = 8;
+	const QFontMetrics metrics(QApplication::font());
+	int text_width = 0;
+	for (const QString &line : lines)
+		text_width = max(text_width, metrics.horizontalAdvance(line));
+	const QSize card_size(text_width + 2 * padding_x,
+		lines.size() * metrics.height() + 2 * padding_y);
+
+	const bool dock_left = mouse_point_.x() > (pp.left() + pp.right()) / 2;
+	const int x = dock_left ? pp.left() + viewport_margin :
+		pp.right() - card_size.width() - viewport_margin;
+	const double signal_center = get_visual_y() +
+		(high_level_offset_ + low_level_offset_) / 2.0;
+	const int centered_y = round(signal_center - card_size.height() / 2.0);
+	const int y = max(pp.top() + viewport_margin,
+		min(centered_y, pp.bottom() - card_size.height() - viewport_margin));
+
+	const QRect card_rect(QPoint(x, y), card_size);
+	const QRect text_rect = card_rect.adjusted(
+		padding_x, padding_y, -padding_x, -padding_y);
+	const QPalette palette = QApplication::palette();
+	QColor panel_color = palette.color(QPalette::Shadow);
+	QColor text_color = panel_color.lightness() < 128 ? Qt::white : Qt::black;
+	QColor border_color = text_color;
+	border_color.setAlpha(55);
+	panel_color.setAlpha(235);
+
+	p.save();
+	p.setPen(border_color);
+	p.setBrush(panel_color);
+	p.drawRoundedRect(card_rect, 3, 3);
+	p.setPen(text_color);
+	p.drawText(text_rect, Qt::AlignLeft | Qt::AlignVCenter, lines.join('\n'));
+	p.restore();
+}
+
+void LogicSignal::paint_hover_measurement(QPainter &p,
+	const ViewItemPaintParams &pp,
+	double samplerate) const
+{
+	if (time_diff_start_sample_ == time_diff_end_sample_)
+		return;
+
+	const double samples_per_pixel = samplerate * pp.scale();
+	const double pixels_offset = pp.pixels_offset();
+	const double start_x = time_diff_start_sample_ /
+		samples_per_pixel - pixels_offset;
+	const double end_x = time_diff_end_sample_ /
+		samples_per_pixel - pixels_offset;
+	const double period_end_x = time_diff_period_end_sample_ /
+		samples_per_pixel - pixels_offset;
+	const double width = (time_diff_end_sample_ -
+		time_diff_start_sample_) / samplerate;
+	const double y = get_visual_y();
+	const double ruler_offset =
+		QFontMetrics(QApplication::font()).height() / 2.0 + 5;
+	const double guide_y = y + (time_diff_level_ ?
+		high_level_offset_ : low_level_offset_);
+	const double width_y = y + high_level_offset_ - ruler_offset;
+	const double period_y = y + low_level_offset_ + ruler_offset;
+	const QString width_text = pv::util::format_value_si(width,
+		pv::util::SIPrefix::unspecified, 9, "s", false);
+
+	paint_measurement_ruler(p, pp, start_x, end_x,
+		width_y, guide_y, width_text);
+
+	QStringList metrics;
+	if (time_diff_period_end_sample_ > time_diff_end_sample_) {
+		const double period = (time_diff_period_end_sample_ -
+			time_diff_start_sample_) / samplerate;
+		const QString period_text = pv::util::format_value_si(period,
+			pv::util::SIPrefix::unspecified, 9, "s", false);
+		paint_measurement_ruler(p, pp, start_x, period_end_x,
+			period_y, guide_y, period_text);
+		metrics << tr("Duty: %1 %").arg(
+			QString::number(width * 100.0 / period, 'f', 2));
+		metrics << tr("Freq: %1").arg(pv::util::format_value_si(1.0 / period,
+			pv::util::SIPrefix::unspecified, 6, "Hz", false));
+	}
+	metrics << tr("Width^-1: %1").arg(pv::util::format_value_si(1.0 / width,
+		pv::util::SIPrefix::unspecified, 6, "Hz", false));
+	paint_hover_metrics(p, pp, metrics);
+}
+
 void LogicSignal::paint_fore(QPainter &p, ViewItemPaintParams &pp)
 {
 	if (base_->enabled()) {
@@ -549,38 +718,7 @@ void LogicSignal::paint_fore(QPainter &p, ViewItemPaintParams &pp)
 		if (hover_update_ &&
 			segment->get_time_measure_state() == LogicSegment::TimeMeasureState::Stopped &&
 			!edge_count_running_) {
-			const int y = get_visual_y();
-			const float low_offset = y + low_level_offset_;
-			const float high_offset = y + high_level_offset_;
-			const float fill_height = low_offset - high_offset;
-
-			if (time_diff_start_sample_ != time_diff_end_sample_) {
-				const double mid_point_x = ((time_diff_start_sample_ +
-						time_diff_end_sample_) / 2.0) /
-						samples_per_pixel - pp.pixels_offset();
-				const double mid_point_y = (int)(high_offset + fill_height / 2);
-				const double first_sample_x = time_diff_start_sample_ /
-						samples_per_pixel - pp.pixels_offset();
-				const double second_sample_x = time_diff_end_sample_ /
-						samples_per_pixel - pp.pixels_offset();
-				double time_diff = (time_diff_end_sample_ -
-						time_diff_start_sample_) / samplerate;
-				QPoint time_diff_point(mid_point_x, mid_point_y);
-
-				const QString time_diff_string = pv::util::format_value_si(time_diff,
-					pv::util::SIPrefix::unspecified, 9, "s", false);
-				const QString freq_diff_string = pv::util::format_value_si(1 / time_diff,
-					pv::util::SIPrefix::unspecified, 9, "Hz", false);
-				p.setPen(QPen(cursor_fill_color_, 2, Qt::SolidLine, Qt::FlatCap));
-				p.drawLine(first_sample_x, mid_point_y, second_sample_x, mid_point_y);
-				vector<QPointF> markers;
-				markers.push_back(QPointF(first_sample_x, mid_point_y));
-				markers.push_back(QPointF(second_sample_x, mid_point_y));
-				draw_markers(p, markers);
-				paint_mouse_text(p, 
-					"Time: " + time_diff_string + "\n" +
-					"Freq: " + freq_diff_string, 2);
-			}
+			paint_hover_measurement(p, pp, samplerate);
 		}
 		if (time_measurement_running_) {
 			QPainterPath path;
