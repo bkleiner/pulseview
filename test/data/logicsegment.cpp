@@ -35,7 +35,35 @@ using std::make_shared;
 using std::shared_ptr;
 using std::vector;
 
+namespace LogicSegmentTest {
+
+struct NoMipMap
+{
+	static void run()
+	{
+		Logic logic(1);
+		shared_ptr<LogicSegment> segment =
+			make_shared<LogicSegment>(logic, 0, 1, 1, false);
+		uint8_t samples[32] = {};
+		segment->append_payload(samples, sizeof(samples));
+
+		BOOST_CHECK_EQUAL(segment->get_sample_count(), sizeof(samples));
+		for (const LogicSegment::MipMapLevel& level : segment->mip_map_) {
+			BOOST_CHECK_EQUAL(level.length, 0);
+			BOOST_CHECK_EQUAL(level.data_length, 0);
+			BOOST_CHECK(level.data == nullptr);
+		}
+	}
+};
+
+} // namespace LogicSegmentTest
+
 BOOST_AUTO_TEST_SUITE(LogicSegmentSearchTest)
+
+BOOST_AUTO_TEST_CASE(internal_segment_can_skip_mipmaps)
+{
+	LogicSegmentTest::NoMipMap::run();
+}
 
 BOOST_AUTO_TEST_CASE(SurroundingEdgesRespectSearchRadius)
 {

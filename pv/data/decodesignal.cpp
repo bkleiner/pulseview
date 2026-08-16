@@ -51,7 +51,7 @@ namespace data {
 
 const double DecodeSignal::DecodeMargin = 1.0;
 const double DecodeSignal::DecodeThreshold = 0.2;
-const int64_t DecodeSignal::DecodeChunkLength = 256 * 1024;
+const int64_t DecodeSignal::DecodeChunkLength = 4 * 1024 * 1024;
 
 
 DecodeSignal::DecodeSignal(pv::Session &session) :
@@ -59,6 +59,7 @@ DecodeSignal::DecodeSignal(pv::Session &session) :
 	session_(session),
 	srd_session_(nullptr),
 	logic_mux_data_invalid_(false),
+	using_direct_input_(false),
 	stack_config_changed_(true),
 	current_segment_id_(0)
 {
@@ -192,7 +193,9 @@ void DecodeSignal::reset_decode(bool shutting_down)
 			output_logic_[dec->get_srd_decoder()]->clear();
 
 	logic_mux_data_.reset();
+	decode_input_data_.reset();
 	logic_mux_data_invalid_ = true;
+	using_direct_input_ = false;
 
 	if (!error_message_.isEmpty()) {
 		error_message_.clear();
@@ -246,24 +249,30 @@ void DecodeSignal::begin_decode()
 			return;
 		}
 
-	// Free the logic data and its segment(s) if it needs to be updated
-	if (logic_mux_data_invalid_)
-		logic_mux_data_.reset();
+	commit_decoder_channels();
+	const shared_ptr<Logic> direct_input = common_input_logic(channels_);
+	using_direct_input_ = bool(direct_input);
 
-	if (!logic_mux_data_) {
+	if (using_direct_input_) {
+		decode_input_data_ = direct_input;
+	} else {
 		const uint32_t ch_count = get_assigned_signal_count();
 		logic_mux_unit_size_ = (ch_count + 7) / 8;
 		logic_mux_data_ = make_shared<Logic>(ch_count);
+		decode_input_data_ = logic_mux_data_;
 	}
 
 	if (get_input_segment_count() == 0)
 		set_error_message(tr("No input data"));
 
-	// Make sure the logic output data is complete and up-to-date
-	logic_mux_interrupt_ = false;
-	logic_mux_thread_ = std::thread(&DecodeSignal::logic_mux_proc, this);
+	// Repack mixed input sources. Channels from one packed source can be
+	// decoded in place through libsigrokdecode's channel map.
+	if (!using_direct_input_) {
+		logic_mux_interrupt_ = false;
+		logic_mux_thread_ = std::thread(&DecodeSignal::logic_mux_proc, this);
+	}
 
-	// Decode the muxed logic data
+	// Decode the selected logic input
 	decode_interrupt_ = false;
 	decode_thread_ = std::thread(&DecodeSignal::decode_proc, this);
 }
@@ -1116,6 +1125,8 @@ void DecodeSignal::update_channel_list()
 
 void DecodeSignal::commit_decoder_channels()
 {
+	update_channel_bit_ids(channels_, bool(common_input_logic(channels_)));
+
 	// Submit channel list to every decoder, containing only the relevant channels
 	for (shared_ptr<Decoder> dec : stack_) {
 		vector<decode::DecodeChannel*> channel_list;
@@ -1126,12 +1137,45 @@ void DecodeSignal::commit_decoder_channels()
 
 		dec->set_channels(channel_list);
 	}
+	// Channel bit IDs are assigned above, before decoders consume the pointers.
+}
 
-	// Channel bit IDs must be in sync with the channel's apperance in channels_
+shared_ptr<Logic> DecodeSignal::common_input_logic(
+	const vector<decode::DecodeChannel>& channels)
+{
+	shared_ptr<Logic> common_input;
+	bool have_input = false;
+
+	for (const decode::DecodeChannel& ch : channels) {
+		if (!ch.assigned_signal)
+			continue;
+
+		const shared_ptr<Logic> input = ch.assigned_signal->logic_data();
+		if (!input)
+			return nullptr;
+
+		if (!have_input) {
+			common_input = input;
+			have_input = true;
+		} else if (input != common_input) {
+			return nullptr;
+		}
+	}
+
+	return have_input ? common_input : nullptr;
+}
+
+void DecodeSignal::update_channel_bit_ids(
+	vector<decode::DecodeChannel>& channels, bool direct_input)
+{
 	int id = 0;
-	for (decode::DecodeChannel& ch : channels_)
-		if (ch.assigned_signal)
-			ch.bit_id = id++;
+	for (decode::DecodeChannel& ch : channels) {
+		if (!ch.assigned_signal)
+			continue;
+
+		ch.bit_id = direct_input ?
+			ch.assigned_signal->logic_bit_index() : id++;
+	}
 }
 
 void DecodeSignal::mux_logic_samples(uint32_t segment_id, const int64_t start, const int64_t end)
@@ -1244,7 +1288,8 @@ void DecodeSignal::logic_mux_proc()
 
 	// Create initial logic mux segment
 	shared_ptr<LogicSegment> output_segment =
-		make_shared<LogicSegment>(*logic_mux_data_, segment_id, logic_mux_unit_size_, 0);
+		make_shared<LogicSegment>(*logic_mux_data_, segment_id,
+			logic_mux_unit_size_, 0, false);
 	logic_mux_data_->push_segment(output_segment);
 
 	output_segment->set_samplerate(get_input_samplerate(0));
@@ -1296,7 +1341,7 @@ void DecodeSignal::logic_mux_proc()
 
 					output_segment =
 						make_shared<LogicSegment>(*logic_mux_data_, segment_id,
-							logic_mux_unit_size_, 0);
+							logic_mux_unit_size_, 0, false);
 					logic_mux_data_->push_segment(output_segment);
 
 					output_segment->set_samplerate(get_input_samplerate(segment_id));
@@ -1366,20 +1411,23 @@ void DecodeSignal::decode_data(
 void DecodeSignal::decode_proc()
 {
 	current_segment_id_ = 0;
+	const shared_ptr<Logic> input_data = decode_input_data_;
+	assert(input_data);
 
 	// If there is no input data available yet, wait until it is or we're interrupted
 	do {
-		if (logic_mux_data_->logic_segments().size() == 0) {
+		if (input_data->logic_segments().size() == 0) {
 			// Wait for input data
 			unique_lock<mutex> input_wait_lock(input_mutex_);
 			decode_input_cond_.wait(input_wait_lock);
 		}
-	} while ((!decode_interrupt_) && (logic_mux_data_->logic_segments().size() == 0));
+	} while ((!decode_interrupt_) && (input_data->logic_segments().size() == 0));
 
 	if (decode_interrupt_)
 		return;
 
-	shared_ptr<const LogicSegment> input_segment = logic_mux_data_->logic_segments().front()->get_shared_ptr();
+	shared_ptr<const LogicSegment> input_segment =
+		input_data->logic_segments().front()->get_shared_ptr();
 	if (!input_segment)
 		return;
 
@@ -1416,16 +1464,16 @@ void DecodeSignal::decode_proc()
 				new_annotations();
 #endif
 
-				if (current_segment_id_ < (logic_mux_data_->logic_segments().size() - 1)) {
+				if (current_segment_id_ < (input_data->logic_segments().size() - 1)) {
 					// Process next segment
 					current_segment_id_++;
 
 					try {
-						input_segment = logic_mux_data_->logic_segments().at(current_segment_id_);
+						input_segment = input_data->logic_segments().at(current_segment_id_);
 					} catch (out_of_range&) {
-						qDebug() << "Decode error for" << name() << ": no logic mux segment" \
-							<< current_segment_id_ << "in decode_proc(), mux segments size is" \
-							<< logic_mux_data_->logic_segments().size();
+						qDebug() << "Decode error for" << name() << ": no input segment" \
+							<< current_segment_id_ << "in decode_proc(), input segments size is" \
+							<< input_data->logic_segments().size();
 						decode_interrupt_ = true;
 						return;
 					}
@@ -1876,15 +1924,19 @@ void DecodeSignal::on_data_received()
 		qDebug().nospace() << name() << ": Input data available, error cleared";
 	}
 
-	if (!logic_mux_thread_.joinable())
+	if (!decode_thread_.joinable())
 		begin_decode();
+	else if (using_direct_input_)
+		decode_input_cond_.notify_one();
 	else
 		logic_mux_cond_.notify_one();
 }
 
 void DecodeSignal::on_input_segment_completed()
 {
-	if (!logic_mux_thread_.joinable())
+	if (using_direct_input_ && decode_thread_.joinable())
+		decode_input_cond_.notify_one();
+	else if (logic_mux_thread_.joinable())
 		logic_mux_cond_.notify_one();
 }
 

@@ -50,9 +50,10 @@ const float LogicSegment::LogMipMapScaleFactor = logf(MipMapScaleFactor);
 const uint64_t LogicSegment::MipMapDataUnit = 64 * 1024; // bytes
 
 LogicSegment::LogicSegment(pv::data::Logic& owner, uint32_t segment_id,
-	unsigned int unit_size,	uint64_t samplerate) :
+	unsigned int unit_size, uint64_t samplerate, bool generate_mipmaps) :
 	Segment(segment_id, samplerate, unit_size),
 	owner_(owner),
+	generate_mipmaps_(generate_mipmaps),
 	last_append_sample_(0),
 	last_append_accumulator_(0),
 	last_append_extra_(0),
@@ -353,8 +354,8 @@ void LogicSegment::append_payload(void *data, uint64_t data_size)
 
 	append_samples(data, sample_count);
 
-	// Generate the first mip-map from the data
-	append_payload_to_mipmap();
+	if (generate_mipmaps_)
+		append_payload_to_mipmap();
 
 	if (sample_count > 1)
 		owner_.notify_samples_added(SharedPtrToSegment(shared_from_this()),

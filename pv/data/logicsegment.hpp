@@ -41,6 +41,7 @@ struct Basic;
 struct LargeData;
 struct Pulses;
 struct LongPulses;
+struct NoMipMap;
 }
 
 namespace pv {
@@ -77,7 +78,8 @@ private:
 
 public:
 	LogicSegment(pv::data::Logic& owner, uint32_t segment_id,
-		unsigned int unit_size, uint64_t samplerate);
+		unsigned int unit_size, uint64_t samplerate,
+		bool generate_mipmaps = true);
 
 	virtual ~LogicSegment();
 
@@ -160,6 +162,7 @@ private:
 
 private:
 	Logic& owner_;
+	const bool generate_mipmaps_;
 
 	struct MipMapLevel mip_map_[ScaleStepCount];
 	uint64_t last_append_sample_;
@@ -174,6 +177,7 @@ private:
 	friend struct LogicSegmentTest::LargeData;
 	friend struct LogicSegmentTest::Pulses;
 	friend struct LogicSegmentTest::LongPulses;
+	friend struct LogicSegmentTest::NoMipMap;
 };
 
 } // namespace data

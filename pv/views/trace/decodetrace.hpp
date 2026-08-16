@@ -131,7 +131,7 @@ private:
 	static const int RowTitleMargin;
 	static const int DrawPadding;
 
-	static const int MaxTraceUpdateRate;
+	static const int TraceUpdateInterval;
 	static const int AnimationDurationInTicks;
 	static const int HiddenRowHideDelay;
 

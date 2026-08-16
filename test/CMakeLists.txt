@@ -188,6 +188,7 @@ if(ENABLE_DECODE)
 		${PROJECT_SOURCE_DIR}/pv/views/trace/decodetrace.cpp
 		${PROJECT_SOURCE_DIR}/pv/widgets/decodergroupbox.cpp
 		${PROJECT_SOURCE_DIR}/pv/widgets/decodermenu.cpp
+		data/decodesignal.cpp
 		data/rowdata.cpp
 		views/tabular_decoder.cpp
 	)

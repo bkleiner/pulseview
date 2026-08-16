@@ -52,6 +52,10 @@ using pv::data::decode::Decoder;
 using pv::data::decode::Row;
 using pv::data::decode::RowData;
 
+namespace DecodeSignalTest {
+struct InputSelection;
+}
+
 namespace pv {
 class Session;
 
@@ -231,6 +235,10 @@ private:
 
 	void update_channel_list();
 
+	static shared_ptr<Logic> common_input_logic(
+		const vector<decode::DecodeChannel>& channels);
+	static void update_channel_bit_ids(
+		vector<decode::DecodeChannel>& channels, bool direct_input);
 	void commit_decoder_channels();
 
 	void mux_logic_samples(uint32_t segment_id, const int64_t start, const int64_t end);
@@ -278,9 +286,11 @@ private:
 
 	struct srd_session *srd_session_;
 
+	shared_ptr<Logic> decode_input_data_;
 	shared_ptr<Logic> logic_mux_data_;
 	uint32_t logic_mux_unit_size_;
 	bool logic_mux_data_invalid_;
+	bool using_direct_input_;
 
 	vector< shared_ptr<Decoder> > stack_;
 	bool stack_config_changed_;
@@ -300,6 +310,8 @@ private:
 	map<const srd_decoder*, shared_ptr<Logic>> output_logic_;
 	map<const srd_decoder*, vector<uint8_t>> output_logic_muxed_data_;
 	vector< shared_ptr<SignalBase>> output_signals_;
+
+	friend struct ::DecodeSignalTest::InputSelection;
 };
 
 } // namespace data

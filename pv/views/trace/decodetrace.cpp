@@ -91,7 +91,9 @@ const double DecodeTrace::EndCapWidth = 5;
 const int DecodeTrace::RowTitleMargin = 7;
 const int DecodeTrace::DrawPadding = 100;
 
-const int DecodeTrace::MaxTraceUpdateRate = 1; // No more than 1 Hz
+// Keep partial decoder output visible without repeatedly repainting a large
+// annotation set while the decoder threads are still busy.
+const int DecodeTrace::TraceUpdateInterval = 4000;
 const int DecodeTrace::AnimationDurationInTicks = 7;
 const int DecodeTrace::HiddenRowHideDelay = 1000; // 1 second
 
@@ -199,7 +201,7 @@ DecodeTrace::DecodeTrace(pv::Session &session,
 	connect(&delayed_trace_updater_, SIGNAL(timeout()),
 		this, SLOT(on_delayed_trace_update()));
 	delayed_trace_updater_.setSingleShot(true);
-	delayed_trace_updater_.setInterval(1000 / MaxTraceUpdateRate);
+	delayed_trace_updater_.setInterval(TraceUpdateInterval);
 
 	connect(&animation_timer_, SIGNAL(timeout()),
 		this, SLOT(on_animation_timer()));
@@ -1512,6 +1514,8 @@ void DecodeTrace::on_decode_reset()
 
 void DecodeTrace::on_decode_finished()
 {
+	delayed_trace_updater_.stop();
+
 	if (owner_)
 		owner_->row_item_appearance_changed(false, true);
 }
